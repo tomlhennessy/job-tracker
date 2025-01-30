@@ -9,12 +9,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  name            String?
+  hashedPassword  String?
+  createdAt       DateTime  @default(now())
+
+  jobs            Job[]     // One-To-Many (a user can have many jobs)
+}
+
 model Job {
-  id          String    @id @default(uuid())
-  userId      String
-  company     String
-  position    String
-  status      String    @default("applied")
-  createdAt   DateTime  @default(now())
+  id              String    @id @default(uuid())
+  userId          String
+  company         String
+  position        String
+  status          String    @default("applied")
+  createdAt       DateTime  @default(now())
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade) // Foreign Key
 
 }

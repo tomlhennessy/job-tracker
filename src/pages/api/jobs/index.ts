@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             const job = await prisma.job.create({
                 data: {
-                    userId: session.user.id,
+                    user: {connect: { id: session.user.id }},
                     company,
                     position,
                     status: status || "applied",
