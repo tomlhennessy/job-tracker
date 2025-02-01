@@ -1,5 +1,3 @@
-
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,23 +8,20 @@ datasource db {
 }
 
 model User {
-  id              String    @id @default(uuid())
-  email           String    @unique
-  name            String?
-  hashedPassword  String?
-  createdAt       DateTime  @default(now())
-
-  jobs            Job[]     // One-To-Many (a user can have many jobs)
+  id             String   @id @default(uuid())
+  email          String   @unique
+  name           String?
+  hashedPassword String
+  createdAt      DateTime @default(now())
+  jobs           Job[]
 }
 
 model Job {
-  id              String    @id @default(uuid())
-  userId          String
-  company         String
-  position        String
-  status          String    @default("applied")
-  createdAt       DateTime  @default(now())
-
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade) // Foreign Key
-
+  id        String   @id @default(uuid())
+  userId    String
+  company   String
+  position  String
+  status    String   @default("applied")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

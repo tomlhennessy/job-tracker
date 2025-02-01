@@ -28,6 +28,12 @@ export default function Login() {
             >
                 Sign in with GitHub
             </button>
+            <button
+                onClick={() => signIn("credentials", { email, password })}
+                className="px-4 py-2 bg-gray-800 text-white rounded-lg"
+            >
+                Sign in with Email
+            </button>
         </div>
     )
 }

@@ -1,9 +1,11 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+const nextConfig = {
   reactStrictMode: true,
-
+  compiler: {
+    styledComponents: true, // ✅ Only if you're using styled-components
+  },
+  images: {
+    domains: ["lh3.googleusercontent.com", "avatars.githubusercontent.com"], // ✅ Required for OAuth images
+  },
 };
 
 export default nextConfig;
