@@ -53,9 +53,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         try {
             const { id } = req.query;
 
+            if (typeof id !== "string" || !id) {
+                return res.status(400).json({ error: "Invalid or missing job ID" });
+            }
+
             const job = await prisma.job.delete({
                 where: {
-                    id: String(id),
+                    id: id,
                     userId: session.user.id,
                 },
             });

@@ -1,8 +1,42 @@
+### Register a New User
 POST http://localhost:3000/api/auth/register
 Content-Type: application/json
 
 {
-  "email": "testuser@example.com",
+  "email": "newuser@example.com",
   "password": "securepassword",
-  "name": "Test User"
+  "name": "New User"
 }
+
+### Get CSRF Token
+GET http://localhost:3000/api/auth/csrf
+
+### Login with Credentials
+POST http://localhost:3000/api/auth/callback/credentials
+Content-Type: application/json
+
+{
+  "csrfToken": "18a49bf343acec073e7cc9758bec6ae54e7d201701488c2608bfd97a181b13b5",
+  "email": "newuser@example.com",
+  "password": "securepassword"
+}
+
+
+### Add a New Job
+POST http://localhost:3000/api/jobs
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijk2ZmUxZDdkLTliYWQtNDE1My04OTMzLTIwOWQ5ODA3YTBjOCIsImVtYWlsIjoibmV3dXNlckBleGFtcGxlLmNvbSIsImlhdCI6MTczODU1MjcwMywiZXhwIjoxNzM5MTU3NTAzfQ._N9e7Z0d3tqGwulc1kXGFHyql5crYacudRuSae5PrJU
+
+{
+  "company": "OpenAI",
+  "position": "Full-Stack Developer",
+  "status": "applied"
+}
+
+### Get All Jobs for Authenticated User
+GET http://localhost:3000/api/jobs
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijk2ZmUxZDdkLTliYWQtNDE1My04OTMzLTIwOWQ5ODA3YTBjOCIsImVtYWlsIjoibmV3dXNlckBleGFtcGxlLmNvbSIsImlhdCI6MTczODU1MjcwMywiZXhwIjoxNzM5MTU3NTAzfQ._N9e7Z0d3tqGwulc1kXGFHyql5crYacudRuSae5PrJU
+
+### Delete a Job
+DELETE http://localhost:3000/api/jobs?id=65bc0c8d-11d1-4990-86da-930fbf2f8fcf
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijk2ZmUxZDdkLTliYWQtNDE1My04OTMzLTIwOWQ5ODA3YTBjOCIsImVtYWlsIjoibmV3dXNlckBleGFtcGxlLmNvbSIsImlhdCI6MTczODU1MjcwMywiZXhwIjoxNzM5MTU3NTAzfQ._N9e7Z0d3tqGwulc1kXGFHyql5crYacudRuSae5PrJU
