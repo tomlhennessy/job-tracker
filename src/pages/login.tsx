@@ -6,7 +6,7 @@ export default function Login() {
     const { data: session } = useSession();
     const router = useRouter();
 
-    // ✅ Fix: Define state variables for email and password
+    // Define state variables for email and password
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
@@ -17,7 +17,7 @@ export default function Login() {
     }, [session, router]);
 
     const handleEmailLogin = async () => {
-        // ✅ Fix: Use state variables for authentication
+        // Use state variables for authentication
         const result = await signIn("credentials", {
             email,
             password,
@@ -50,7 +50,7 @@ export default function Login() {
                 Sign in with GitHub
             </button>
 
-            {/* ✅ Fix: Add input fields for email & password */}
+            {/* Input fields for email & password */}
             <div className="flex flex-col gap-2 mt-4">
                 <input
                     type="email"
