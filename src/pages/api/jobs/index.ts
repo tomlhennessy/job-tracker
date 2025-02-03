@@ -12,14 +12,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(401).json({ message: "Not authenticated" });
     }
 
-    // POST /api/jobs (Add a job)
+    // Add a Job
     if (req.method === "POST") {
         try {
             const { company, position, status } = req.body;
 
+            if (!company || !position) {
+                return res.status(400).json({ error: "Company and position are required" });
+            }
+
             const job = await prisma.job.create({
                 data: {
-                    user: {connect: { id: session.user.id }},
+                    userId: session.user.id,
                     company,
                     position,
                     status: status || "applied",
@@ -28,12 +32,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             return res.status(201).json(job);
         } catch (error) {
-            console.error("Error adding job:", error);
+            console.log("Error: ", error)
             return res.status(500).json({ error: "Failed to add job" });
         }
     }
 
-    // GET /api/jobs (Fetch user jobs)
+    // Get All Jobs
     if (req.method === "GET") {
         try {
             const jobs = await prisma.job.findMany({
@@ -43,12 +47,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             return res.status(200).json(jobs);
         } catch (error) {
-            console.error("Error fetching jobs:", error);
+            console.log("Error: ", error)
             return res.status(500).json({ error: "Failed to fetch jobs" });
         }
     }
 
-    // DELETE /api/jobs/:id (Delete a job)
+    // Delete a Job
     if (req.method === "DELETE") {
         try {
             const { id } = req.query;
@@ -66,7 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             return res.status(200).json({ message: "Job deleted", job });
         } catch (error) {
-            console.error("Error deleting job:", error);
+            console.log("Error: ", error)
             return res.status(500).json({ error: "Failed to delete job" });
         }
     }
