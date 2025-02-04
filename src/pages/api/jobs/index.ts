@@ -39,26 +39,73 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
     }
 
-    // Get All Jobs
-    if (req.method === "GET") {
+    // Update a Job
+    if (req.method === "PUT") {
         try {
-            const jobs = await prisma.job.findMany({
-                where: { userId: session.user.id },
-                orderBy: { createdAt: "desc" },
-                select: {
-                    id: true,
-                    company: true,
-                    position: true,
-                    status: true,
-                    createdAt: true,
-                    jobDescription: true,  // ✅ Include in response
-                    coverLetter: true,     // ✅ Include in response
-                  },
+            const { id, coverLetter, followUpDate } = req.body;
+
+            const updatedJob = await prisma.job.update({
+                where: { id },
+                data: {
+                    coverLetter,
+                    followUpDate: followUpDate ? new Date(followUpDate) : undefined,
+                },
             });
 
-            return res.status(200).json(jobs);
+            return res.status(200).json(updatedJob);
         } catch (error) {
-            console.log("Error: ", error)
+            console.error("Error updating job:", error);
+            return res.status(500).json({ error: "Failed to update job" });
+        }
+    }
+
+    // Get Jobs (All Jobs or a Specific Job by ID)
+    if (req.method === "GET") {
+        try {
+            const { id } = req.query;
+
+            if (id) {
+                // ✅ Fetch a specific job by ID
+                const job = await prisma.job.findUnique({
+                    where: { id: id as string },
+                    select: {
+                        id: true,
+                        company: true,
+                        position: true,
+                        status: true,
+                        createdAt: true,
+                        jobDescription: true,
+                        coverLetter: true,
+                        followUpDate: true,
+                    },
+                });
+
+                if (!job) {
+                    return res.status(404).json({ error: "Job not found" });
+                }
+
+                return res.status(200).json(job);
+            } else {
+                // ✅ Fetch all jobs
+                const jobs = await prisma.job.findMany({
+                    where: { userId: session.user.id },
+                    orderBy: { createdAt: "desc" },
+                    select: {
+                        id: true,
+                        company: true,
+                        position: true,
+                        status: true,
+                        createdAt: true,
+                        jobDescription: true,
+                        coverLetter: true,
+                        followUpDate: true,
+                    },
+                });
+
+                return res.status(200).json(jobs);
+            }
+        } catch (error) {
+            console.log("Error: ", error);
             return res.status(500).json({ error: "Failed to fetch jobs" });
         }
     }
@@ -81,7 +128,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             return res.status(200).json({ message: "Job deleted", job });
         } catch (error) {
-            console.log("Error: ", error)
+            console.log("Error: ", error);
             return res.status(500).json({ error: "Failed to delete job" });
         }
     }

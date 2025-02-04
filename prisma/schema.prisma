@@ -25,6 +25,7 @@ model Job {
   createdAt       DateTime @default(now())
   jobDescription  String?
   coverLetter     String?
+  followUpDate    DateTime?
 
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

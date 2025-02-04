@@ -1,24 +1,51 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { Job } from "../../types/job";
+import Layout from "../../components/Layout";
 
 export default function AIToolsForJob() {
   const router = useRouter();
   const { id } = router.query;
 
-  const [job, setJob] = useState<any>(null);
+  const [job, setJob] = useState<Job | null>(null);
+  const [jobDescription, setJobDescription] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [followUpDate, setFollowUpDate] = useState<string | null>(null);
+  const [status, setStatus] = useState("applied");
 
-  useEffect(() => {
-    if (id) fetchJob();
-  }, [id]);
-
-  const fetchJob = async () => {
+  const fetchJob = useCallback(async () => {
     const res = await fetch(`/api/jobs?id=${id}`);
     const data = await res.json();
     setJob(data);
+    setJobDescription(data.jobDescription || "");
     setCoverLetter(data.coverLetter || "");
-    setLoading(false);
+    setFollowUpDate(data.followUpDate || "");
+    setStatus(data.status || "applied");
+  }, [id]);
+
+  useEffect(() => {
+    if (id) fetchJob();
+  }, [id, fetchJob]);
+
+  const handleSave = async () => {
+    const res = await fetch("/api/jobs", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: job?.id,
+        jobDescription,
+        coverLetter,
+        followUpDate,
+        status,
+      }),
+    });
+
+    if (res.ok) {
+      alert("✅ Job details saved successfully!");
+      fetchJob();
+    } else {
+      alert("❌ Failed to save job details.");
+    }
   };
 
   const handleGenerateCoverLetter = async () => {
@@ -27,8 +54,8 @@ export default function AIToolsForJob() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: "cover_letter",
-        cv: "Insert your CV here",
-        jobDescription: job.jobDescription,
+        cv: "Insert your CV here", // Placeholder for actual CV data
+        jobDescription,
       }),
     });
 
@@ -36,26 +63,88 @@ export default function AIToolsForJob() {
     setCoverLetter(data.result);
   };
 
-  if (loading) return <p>Loading...</p>;
-
   return (
-    <div className="max-w-3xl mx-auto bg-white shadow-md rounded-lg p-6 mt-6">
-      <h1 className="text-2xl font-bold">{job.company} - {job.position}</h1>
-      <p className="mt-2"><strong>Status:</strong> {job.status}</p>
-      <p className="mt-4">{job.jobDescription}</p>
+    <Layout>
+      <div className="max-w-4xl mx-auto bg-white shadow-md rounded-lg p-6 mt-6 sm:p-8">
+        {/* 🔙 Back to Dashboard */}
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md mb-6 transition duration-300"
+        >
+          ← Back to Dashboard
+        </button>
 
-      <button
-        onClick={handleGenerateCoverLetter}
-        className="bg-green-500 text-white px-4 py-2 rounded-md mt-4"
-      >
-        Generate Cover Letter
-      </button>
+        <h1 className="text-3xl font-bold mb-6 text-center sm:text-4xl">
+          {job?.company} - {job?.position}
+        </h1>
 
-      {coverLetter && (
-        <div className="mt-4 bg-gray-100 p-4 rounded-md whitespace-pre-wrap">
-          {coverLetter}
+        {/* Job Status */}
+        <div className="mb-6">
+          <label className="block mb-1 font-semibold text-gray-700">Job Status:</label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="border rounded-md p-2 w-full focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="applied">Applied</option>
+            <option value="interview">Interview</option>
+            <option value="rejected">Rejected</option>
+            <option value="offer">Offer</option>
+          </select>
         </div>
-      )}
-    </div>
+
+        {/* Job Description */}
+        <div className="mb-6">
+          <label className="block mb-1 font-semibold text-gray-700">Job Description:</label>
+          <textarea
+            value={jobDescription}
+            onChange={(e) => setJobDescription(e.target.value)}
+            placeholder="Add the job description here..."
+            className="w-full border rounded-md p-3 focus:ring-2 focus:ring-blue-500"
+            rows={6}
+          />
+        </div>
+
+        {/* Cover Letter */}
+        <div className="mb-6">
+          <label className="block mb-1 font-semibold text-gray-700">Cover Letter:</label>
+          <textarea
+            value={coverLetter}
+            onChange={(e) => setCoverLetter(e.target.value)}
+            placeholder="Generated cover letter will appear here..."
+            className="w-full border rounded-md p-3 focus:ring-2 focus:ring-green-500"
+            rows={8}
+          />
+        </div>
+
+        {/* Follow-up Date */}
+        <div className="mb-6">
+          <label className="block mb-1 font-semibold text-gray-700">Follow-up Date:</label>
+          <input
+            type="date"
+            value={followUpDate || ""}
+            onChange={(e) => setFollowUpDate(e.target.value)}
+            className="border rounded-md p-2 w-full focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        {/* Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 mt-6">
+          <button
+            onClick={handleGenerateCoverLetter}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition duration-300"
+          >
+            ✍️ Generate Cover Letter
+          </button>
+
+          <button
+            onClick={handleSave}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-300"
+          >
+            💾 Save Changes
+          </button>
+        </div>
+      </div>
+    </Layout>
   );
 }
