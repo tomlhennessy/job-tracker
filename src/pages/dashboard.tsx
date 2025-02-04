@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AddJobForm from "../components/AddJobForm";
 import ApplicationsTable from "../components/ApplicationsTable";
 import Layout from "../components/Layout";
+import ResumeEditor from "@/components/ResumeEditor";
 
 export default function Dashboard() {
     const { data: session, status } = useSession();
@@ -47,9 +48,11 @@ export default function Dashboard() {
     return (
         <Layout>
             <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 md:p-8">
-                <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">📋 Dashboard</h2>
+                <h2 className="text-3xl font-bold mb-4 text-center text-gray-800">📋 Dashboard</h2>
                 <AddJobForm refreshApplications={fetchApplications} />
                 <ApplicationsTable applications={applications} refreshApplications={fetchApplications} />
+
+                <ResumeEditor />
             </div>
         </Layout>
     );

@@ -8,4 +8,3 @@ export interface Job {
     followUpDate?: string | null;
     createdAt: string;
   }
-  
