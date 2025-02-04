@@ -17,11 +17,15 @@ model User {
 }
 
 model Job {
-  id        String   @id @default(uuid())
-  userId    String
-  company   String
-  position  String
-  status    String   @default("applied")
-  createdAt DateTime @default(now())
+  id              String   @id @default(uuid())
+  userId          String
+  company         String
+  position        String
+  status          String   @default("applied")
+  createdAt       DateTime @default(now())
+  jobDescription  String?
+  coverLetter     String?
+
+
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

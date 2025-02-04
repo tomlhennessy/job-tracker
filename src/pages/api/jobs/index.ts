@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Add a Job
     if (req.method === "POST") {
         try {
-            const { company, position, status } = req.body;
+            const { company, position, status, jobDescription, coverLetter } = req.body;
 
             if (!company || !position) {
                 return res.status(400).json({ error: "Company and position are required" });
@@ -27,6 +27,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     company,
                     position,
                     status: status || "applied",
+                    jobDescription,
+                    coverLetter,
                 },
             });
 
@@ -43,6 +45,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const jobs = await prisma.job.findMany({
                 where: { userId: session.user.id },
                 orderBy: { createdAt: "desc" },
+                select: {
+                    id: true,
+                    company: true,
+                    position: true,
+                    status: true,
+                    createdAt: true,
+                    jobDescription: true,  // ✅ Include in response
+                    coverLetter: true,     // ✅ Include in response
+                  },
             });
 
             return res.status(200).json(jobs);
