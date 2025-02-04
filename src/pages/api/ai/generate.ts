@@ -1,59 +1,72 @@
-import { PrismaClient } from "@prisma/client/extension";
 import { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth";
 import OpenAI from "openai";
-import { authOptions } from "../auth/[...nextauth]";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const prisma = new PrismaClient()
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   try {
-    const session = await getServerSession(req, res, authOptions)
+    const { type, cv, jobDescription } = req.body;
 
-    if (!session?.user?.id) {
-      return res.status(401).json({ error: "Unauthorised" })
+    if (!type || (type === "enhance_cv" && !cv) || (type === "cover_letter" && (!cv || !jobDescription))) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const { type, cv, jobDescription } = req.body
+    let prompt = "";
 
-    if (!type || (type === "enhance_cv" && !cv) || (type === "cover_letter" && !jobDescription)) {
-      return res.status(400).json({ error: "Missing required fields" })
-    }
-
-    let prompt = ""
-
-    // enhance cv
+    // ✨ Enhance CV
     if (type === "enhance_cv") {
-      prompt = `You are an expert CV writer. Improve the following CV to make it more professional, concise, and impactful. Focus on achievements, action verbs, and clarity.\n\nCV:\n${cv}`
+      prompt = `You are an expert CV writer. Improve the following CV to make it more professional, concise, and impactful. Focus on achievements, action verbs, and clarity.\n\nCV:\n${cv}`;
     }
 
-    // generate cover letter (auto fetch cv)
+    // 📝 Generate Cover Letter
     if (type === "cover_letter") {
-      const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { resume: true }
-      })
-
-      if (!user?.resume) {
-        return res.status(400).json({error: "No saved resume found. Please add your resume in the dashboard."})
-      }
-
-      prompt = `You are a professional cover letter writer. Based on the following CV and job description, write a standout, personalized cover letter. Highlight key skills, achievements, and explain why this candidate is a great fit.\n\nCV:\n${user.resume}\n\nJob Description:\n${jobDescription}`
+      prompt = `You are a professional cover letter writer. Based on the following CV and job description, write a standout, personalized cover letter. Highlight key skills, achievements, and explain why this candidate is a great fit.\n\nCV:\n${cv}\n\nJob Description:\n${jobDescription}`;
     }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{role: "user", content: prompt }]
-    })
+      model: "gpt-4o", // ✅ Using GPT-4o for better performance and cost-efficiency
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 800, // ✅ Limiting tokens to control cost
+    });
 
-    res.status(200).json({ result: completion.choices[0].message.content })
+    const result = completion.choices[0].message.content;
 
-  } catch (error) {
-    console.error("Error:", error)
-    res.status(500).json({ error: "Failed to generate content."})
+    // ✅ Guard Clause for Usage Tracking
+    const usage = completion.usage;
+    if (usage) {
+      console.log("Tokens Used:", usage);
+
+      // 🚨 Cost Estimation (adjust based on OpenAI pricing)
+      const inputCost = (usage.prompt_tokens / 1000) * 0.0005;
+      const outputCost = (usage.completion_tokens / 1000) * 0.0015;
+      const totalCost = (inputCost + outputCost).toFixed(6); // 6 decimal places for small amounts
+
+      console.log(`Estimated Cost: $${totalCost}`);
+
+      // ✅ Safety Check: Prevent costly requests
+      if (usage.total_tokens > 1500) {
+        throw new Error("Token limit exceeded. Please shorten your input.");
+      }
+
+      return res.status(200).json({ result, cost: totalCost });
+    } else {
+      console.warn("Token usage data is unavailable.");
+    }
+
+    return res.status(200).json({ result });
+
+  } catch (error: unknown) {
+    console.error("OpenAI API Error:", error);
+
+    if (error instanceof Error) {
+      return res.status(500).json({ error: error.message });
+    } else {
+      return res.status(500).json({ error: "An unexpected error occurred." });
+    }
   }
 }

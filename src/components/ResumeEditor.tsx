@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 export default function ResumeEditor() {
     const [resume, setResume] = useState("")
     const [loading, setLoading] = useState(false)
+    const [error, setError] = useState("")
 
     useEffect(() => {
         const fetchResume = async () => {
@@ -26,17 +27,37 @@ export default function ResumeEditor() {
     }
 
     const handleEnhance = async () => {
-        setLoading(true)
-        const res = await fetch("/api/resume", {
-            method: "POST",
-            headers: { "Content-Type": "application/json"},
-            body: JSON.stringify({ resume })
-        })
-        const data = await res.json()
-        setResume(data.resume)
-        setLoading(false)
-        alert("🚀 Resume enhanced!")
-    }
+        setLoading(true);
+        setError("");
+
+        try {
+            const response = await fetch("/api/resume", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ resume }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Failed to enhance resume.");
+            }
+
+            setResume(data.resume);
+        } catch (error: unknown) {
+            console.error(error);
+            // ✅ Check if 'error' is an instance of Error
+            if (error instanceof Error) {
+                setError(error.message);
+            } else {
+                setError("An unexpected error occurred.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
 
     return (
         <div className='bg-white shadow-md rounded-lg p-6 mt-6'>
@@ -64,6 +85,7 @@ export default function ResumeEditor() {
                 >
                     {loading ? "Saving..." : "💾 Save Resume"}
                 </button>
+                {error && <p className="text-red-500">{error}</p>}
             </div>
 
         </div>
