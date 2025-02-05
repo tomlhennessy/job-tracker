@@ -5,7 +5,7 @@ export default function Header() {
 
     return (
         <header className='bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center'>
-            <h1 className="text-2xl font-bold">Job Tracker</h1>
+            <h1 className="text-2xl font-bold">Appli.sh</h1>
             {session && (
                 <button
                     onClick={() => signOut()}
