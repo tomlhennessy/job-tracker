@@ -9,7 +9,7 @@ export default function Header() {
       {session && (
         <button
           onClick={() => signOut()}
-          className="bg-slate-300 hover:bg-red-400 text-white px-3 py-2 rounded-full shadow-soft transition"
+          className="bg-slate-400 hover:bg-red-400 text-white px-3 py-2 rounded-full shadow-soft transition"
         >
           Sign Out
         </button>

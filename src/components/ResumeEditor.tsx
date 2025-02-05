@@ -61,7 +61,7 @@ export default function ResumeEditor() {
 
     return (
         <div className='bg-white shadow-md rounded-lg p-6 mt-6'>
-            <h2 className='text-2xl font-bold mb-4'>📄 My Resume</h2>
+            <h2 className='text-2xl font-bold text-center gradient-text opacity-90 mb-4'>My Resume</h2>
             <textarea
                 value={resume}
                 onChange={(e) => setResume(e.target.value)}
