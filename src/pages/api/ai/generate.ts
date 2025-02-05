@@ -20,12 +20,40 @@ export default async function handler(
 
     // ✨ Enhance CV
     if (type === "enhance_cv") {
-      prompt = `You are an expert CV writer. Improve the following CV to make it more professional, concise, and impactful. Focus on achievements, action verbs, and clarity.\n\nCV:\n${cv}`;
+      prompt = `You are an expert resume writer specializing in optimizing resumes for Applicant Tracking Systems (ATS).
+
+      Your goal is to:
+      - Optimize the following resume to be ATS-friendly.
+      - Improve formatting, remove unnecessary graphics or complex layouts.
+      - Incorporate keywords from the job description naturally.
+      - Use strong action verbs, quantify achievements, and ensure clarity.
+
+      **Job Description:**
+      ${jobDescription}
+
+      **Resume:**
+      ${cv}
+
+      Return the improved, ATS-optimized resume.`;
     }
 
     // 📝 Generate Cover Letter
     if (type === "cover_letter") {
-      prompt = `You are a professional cover letter writer. Based on the following CV and job description, write a standout, personalized cover letter. Highlight key skills, achievements, and explain why this candidate is a great fit.\n\nCV:\n${cv}\n\nJob Description:\n${jobDescription}`;
+      prompt = `You are an expert cover letter writer focused on creating ATS-friendly cover letters.
+
+      Your task is to:
+      - Write a professional cover letter based on the provided resume and job description.
+      - Naturally integrate relevant keywords from the job description.
+      - Keep the language concise, formal, and results-driven.
+      - Emphasize the candidate's key achievements, skills, and why they’re a strong fit.
+
+      **Job Description:**
+      ${jobDescription}
+
+      **Resume:**
+      ${cv}
+
+      Return an ATS-optimized cover letter in a professional tone.`;
     }
 
     const completion = await openai.chat.completions.create({

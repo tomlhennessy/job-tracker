@@ -1,7 +1,15 @@
+import Features from "@/components/Features";
+import Footer from "@/components/Footer";
+import Hero from "@/components/Hero";
+import Navbar from "@/components/Navbar";
+
 export default function Home() {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-blue-500 text-white text-3xl font-bold">
-        Tailwind is Working! 🚀
+      <div>
+        <Navbar />
+        <Hero />
+        <Features />
+        <Footer />
       </div>
     );
   }

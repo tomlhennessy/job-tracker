@@ -44,8 +44,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 messages: [
                     {
                         role: "user",
-                        content: `You are an expert CV writer. Improve the following CV to make it more professional, concise, and impactful. Focus on achievements, action verbs, and clarity.\n\nCV:\n${cv}`
-                    }
+                        content: `You are an expert resume writer specializing in optimizing resumes for Applicant Tracking Systems (ATS).
+
+                        Your goal is to:
+                        - Optimize the following resume to be ATS-friendly.
+                        - Improve formatting, remove unnecessary graphics or complex layouts.
+                        - Use strong action verbs, quantify achievements, and ensure clarity.
+
+                        **Resume:**
+                        ${cv}
+
+                        Return the improved, ATS-optimized resume.
+                    `}
                 ],
                 max_tokens: 800 // ✅ Limit to 800 tokens for output control
             });

@@ -9,7 +9,7 @@ export default function App({ Component, pageProps }: AppProps) {
             <SessionProvider session={pageProps.session}>
                 <Head>
                     <link rel="icon" href="/rocket_logo_transparent.png" type="image/png" />
-                    <title>Appli.sh 🚀</title>
+                    <title>Appli.sh | Simplify Your Job Search with AI</title>
                 </Head>
                 <Component {...pageProps} />
             </SessionProvider>
