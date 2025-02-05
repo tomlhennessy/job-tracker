@@ -55,7 +55,7 @@ export default function ApplicationsTable({
                             <td className="px-4 py-2">{app.company}</td>
                             <td className="px-4 py-2">{app.position}</td>
                             <td className="px-4 py-2 capitalize">{app.status}</td>
-                            <td className="px-4 py-2 flex gap-2 justify-center">
+                            <td className="px-4 py-2 flex gap-4 justify-center my-2 mx-auto">
                                 <button
                                     onClick={() => handleViewJob(app.id)}
                                     className="bg-gradient text-white px-5 py-1 rounded-md shadow-md hover:shadow-lg transition opacity-80 hover:opacity-100"
