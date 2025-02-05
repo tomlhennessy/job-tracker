@@ -48,7 +48,7 @@ export default function Dashboard() {
     return (
         <Layout>
             <div className="max-w-5xl mx-auto bg-card shadow-soft rounded-2xl p-8 mt-8 space-y-10">
-                <h2 className="text-4xl font-bold text-center gradient-text">Dashboard</h2>
+                <h2 className="text-4xl font-bold text-center gradient-text opacity-90">Dashboard</h2>
 
                 <AddJobForm refreshApplications={fetchApplications} />
                 <ApplicationsTable applications={applications} refreshApplications={fetchApplications} />

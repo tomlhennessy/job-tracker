@@ -16,8 +16,8 @@ export default function ApplicationsTable({
 
     return (
         <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left border border-gray-300 shadow-sm">
-                <thead className="bg-gray-200 text-gray-700">
+            <table className="w-full text-sm text-left border border-gray-50 shadow-lg">
+                <thead className="bg-gray-100 text-gray-700">
                     <tr>
                         <th className="px-4 py-2">Company</th>
                         <th className="px-4 py-2">Position</th>
@@ -34,15 +34,15 @@ export default function ApplicationsTable({
                             <td className="px-4 py-2 flex gap-2 justify-center">
                                 <button
                                     onClick={() => handleViewJob(app.id)}
-                                    className="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg shadow-soft"
+                                    className="bg-gradient text-white px-5 py-1 rounded-md shadow-md hover:shadow-lg transition opacity-70 hover:opacity-100"
                                 >
                                     View
                                 </button>
                                 <button
                                     onClick={() => refreshApplications()}
-                                    className="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg shadow-soft"
+                                    className="bg-red-500 text-white px-3 py-2 rounded-md shadow-md hover:shadow-lg transition opacity-70 hover:opacity-100"
                                 >
-                                    Refresh
+                                    Remove
                                 </button>
                             </td>
                         </tr>

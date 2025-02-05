@@ -19,7 +19,7 @@ module.exports = {
         border: "#E5E7EB",
       },
       backgroundImage: {
-        gradient: "linear-gradient(90deg, #4F8DF9 0%, #6EE7B7 100%)",
+        gradient: "linear-gradient(90deg, #4F8DF9 0%,rgba(22, 9, 87, 0.4) 100%)",
       },
       boxShadow: {
         subtle: "0 4px 12px rgba(0, 0, 0, 0.05)",

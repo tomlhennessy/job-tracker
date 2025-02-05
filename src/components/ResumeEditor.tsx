@@ -69,11 +69,11 @@ export default function ResumeEditor() {
                 placeholder="Place your resume here..."
             />
 
-            <div className='flex gap-4 mt-4'>
+            <div className='flex gap-4 mt-4 justify-center'>
                 <button
                 onClick={handleEnhance}
                 disabled={loading}
-                className='bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg shadow-soft'
+                className='bg-primary text-white px-3 py-1 rounded-md shadow-md hover:shadow-lg transition opacity-80 hover:opacity-100'
                 >
                     {loading ? "Enhancing..." : "✨ Enhance with AI"}
                 </button>
@@ -81,7 +81,7 @@ export default function ResumeEditor() {
                 <button
                 onClick={handleSave}
                 disabled={loading}
-                className='bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg shadow-soft'
+                className='bg-green-500 text-white px-3 py-1 rounded-md shadow-md hover:shadow-lg transition opacity-90 hover:opacity-100'
                 >
                     {loading ? "Saving..." : "💾 Save Resume"}
                 </button>

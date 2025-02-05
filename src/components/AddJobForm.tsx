@@ -52,7 +52,7 @@ export default function AddJobForm({ refreshApplications }: { refreshApplication
             </select>
             <button
                 type="submit"
-                className="bg-gradient text-white px-6 py-3 rounded-full shadow-soft hover:shadow-lg transition"
+                className="bg-gradient text-white px-6 py-3 rounded-full shadow-md hover:shadow-lg transition opacity-70 hover:opacity-100"
             >
                 ➕ Add Job
             </button>
