@@ -34,7 +34,7 @@ export default function Login() {
 
     return (
         <div className='flex flex-col items-center justify-center h-screen'>
-            <h1 className='text-3xl font-bold mb-4'>Job Tracker</h1>
+            <h1 className='text-4xl font-bold text-center gradient-text p-6'>Appli.sh</h1>
 
             <button
                 onClick={() => signIn("google", { callbackUrl: "/dashboard" })}

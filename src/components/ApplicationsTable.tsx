@@ -34,13 +34,13 @@ export default function ApplicationsTable({
                             <td className="px-4 py-2 flex gap-2 justify-center">
                                 <button
                                     onClick={() => handleViewJob(app.id)}
-                                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md transition duration-300"
+                                    className="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg shadow-soft"
                                 >
                                     View
                                 </button>
                                 <button
                                     onClick={() => refreshApplications()}
-                                    className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-md transition duration-300"
+                                    className="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg shadow-soft"
                                 >
                                     Refresh
                                 </button>

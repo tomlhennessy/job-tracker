@@ -73,7 +73,7 @@ export default function ResumeEditor() {
                 <button
                 onClick={handleEnhance}
                 disabled={loading}
-                className='bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition'
+                className='bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg shadow-soft'
                 >
                     {loading ? "Enhancing..." : "✨ Enhance with AI"}
                 </button>
@@ -81,7 +81,7 @@ export default function ResumeEditor() {
                 <button
                 onClick={handleSave}
                 disabled={loading}
-                className='bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition'
+                className='bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg shadow-soft'
                 >
                     {loading ? "Saving..." : "💾 Save Resume"}
                 </button>

@@ -65,7 +65,7 @@ export default function AIToolsForJob() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto bg-white shadow-md rounded-lg p-6 mt-6 sm:p-8">
+      <div className="max-w-4xl mx-auto bg-white shadow-soft rounded-2xl p-8 mt-8 space-y-6">
         {/* 🔙 Back to Dashboard */}
         <button
           onClick={() => router.push("/dashboard")}
@@ -74,7 +74,7 @@ export default function AIToolsForJob() {
           ← Back to Dashboard
         </button>
 
-        <h1 className="text-3xl font-bold mb-6 text-center sm:text-4xl">
+        <h1 className="text-3xl font-bold gradient-text text-center">
           {job?.company} - {job?.position}
         </h1>
 
@@ -100,7 +100,7 @@ export default function AIToolsForJob() {
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
             placeholder="Add the job description here..."
-            className="w-full border rounded-md p-3 focus:ring-2 focus:ring-blue-500"
+            className="w-full h-32 p-4 border border-border rounded-lg focus:ring-2 focus:ring-primary"
             rows={6}
           />
         </div>
@@ -112,7 +112,7 @@ export default function AIToolsForJob() {
             value={coverLetter}
             onChange={(e) => setCoverLetter(e.target.value)}
             placeholder="Generated cover letter will appear here..."
-            className="w-full border rounded-md p-3 focus:ring-2 focus:ring-green-500"
+            className="w-full h-32 p-4 border border-border rounded-lg focus:ring-2 focus:ring-primary"
             rows={8}
           />
         </div>
@@ -132,14 +132,14 @@ export default function AIToolsForJob() {
         <div className="flex flex-col sm:flex-row gap-4 mt-6">
           <button
             onClick={handleGenerateCoverLetter}
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition duration-300"
+            className="w-full bg-gradient text-white py-3 rounded-xl hover:shadow-md transition"
           >
             ✍️ Generate Cover Letter
           </button>
 
           <button
             onClick={handleSave}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-300"
+            className="w-full bg-gradient text-white py-3 rounded-xl hover:shadow-md transition"
           >
             💾 Save Changes
           </button>

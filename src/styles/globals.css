@@ -1,4 +1,40 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/700.css";
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #F9FAFB;
+  color: #111827;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 700;
+  color: #111827;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #4F8DF9, #6EE7B7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+button {
+  transition: all 0.3s ease;
+  border-radius: 12px;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}

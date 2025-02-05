@@ -1,5 +1,5 @@
 {
-  "name": "job-tracker",
+  "name": "appli.sh",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.1.1",
+    "@fontsource/nunito": "^5.1.1",
     "@prisma/client": "^6.3.0",
     "@sendgrid/mail": "^8.1.4",
     "@types/next-auth": "^3.13.0",
