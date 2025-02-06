@@ -65,7 +65,7 @@ export default function AIToolsForJob() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto bg-white shadow-soft rounded-2xl p-8 mt-8 space-y-6">
+      <div className="max-w-3xl mx-auto bg-white shadow-soft rounded-2xl p-8 mt-8 space-y-6">
         {/* 🔙 Back to Dashboard */}
         <button
           onClick={() => router.push("/dashboard")}

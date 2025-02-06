@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import html2pdf from "html2pdf.js";
 import ResumePreview from "./ResumePreview";
 
