@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (req.method === "GET") {
             const user = await prisma.user.findUnique({
                 where: { id: userId },
-                select: { resume: true }
+                select: { resume: true },
             });
             return res.status(200).json(user?.resume);
         }
@@ -37,70 +37,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         if (req.method === "POST") {
-            const { resume: cv } = req.body;
+            const { resume: rawCV } = req.body;
+
+            const prompt = `You are an expert CV writer. Create a professional, ATS-optimized CV based on the following raw text. Structure the output in JSON with:
+            - Full Name
+            - Contact Info (email, phone, location, LinkedIn)
+            - Professional Summary
+            - Work Experience (company, role, dates, location, achievements)
+            - Education (degree, institution, dates)
+            - Skills (list)
+
+            Raw CV: ${rawCV}`;
 
             const completion = await openai.chat.completions.create({
-                model: "gpt-4o", // ✅ Using GPT-4o
-                messages: [
-                    {
-                        role: "user",
-                        content: `You are an expert resume writer specializing in optimizing resumes for Applicant Tracking Systems (ATS).
-
-                        Your goal is to:
-                        - Optimize the following resume to be ATS-friendly.
-                        - Improve formatting, remove unnecessary graphics or complex layouts.
-                        - Use strong action verbs, quantify achievements, and ensure clarity.
-
-                        **Resume:**
-                        ${cv}
-
-                        Return the improved, ATS-optimized resume.
-                    `}
-                ],
-                max_tokens: 800 // ✅ Limit to 800 tokens for output control
+                model: "gpt-4o",
+                messages: [{ role: "user", content: prompt }],
+                max_tokens: 800,
             });
 
-            const enhancedResume = completion.choices[0].message.content;
+            const responseContent = completion.choices[0].message.content;
 
-            // ✅ Guard clause for usage
-            const usage = completion.usage;
-            if (usage) {
-                console.log("Tokens Used:", usage);
+            const structuredData = JSON.parse(responseContent || "{}");
 
-                // 🚨 Cost Estimation (adjust based on current OpenAI pricing)
-                const inputCost = (usage.prompt_tokens / 1000) * 0.0005;
-                const outputCost = (usage.completion_tokens / 1000) * 0.0015;
-                const totalCost = (inputCost + outputCost).toFixed(6); // 6 decimal places for small amounts
+            await prisma.user.update({
+                where: { id: userId },
+                data: { resume: structuredData },
+            });
 
-                console.log(`Estimated Cost: $${totalCost}`);
-
-                // ✅ Safety Check: Prevent costly requests
-                if (usage.total_tokens > 1500) {
-                    throw new Error("Token limit exceeded. Please shorten your resume.");
-                }
-
-                await prisma.user.update({
-                    where: { id: userId },
-                    data: { resume: enhancedResume }
-                });
-
-                return res.status(200).json({ resume: enhancedResume, cost: totalCost });
-            } else {
-                console.warn("Token usage data is unavailable.");
-            }
-
-            return res.status(200).json({ resume: enhancedResume });
+            return res.status(200).json({ resume: structuredData });
         }
 
         res.status(405).json({ message: "Method not allowed." });
-
     } catch (error: unknown) {
-        console.error("OpenAI API Error:", error);
-
-        if (error instanceof Error) {
-            return res.status(500).json({ error: error.message });
-        } else {
-            return res.status(500).json({ error: "An unexpected error occurred." });
-        }
+        console.error("API Error:", error);
+        return res.status(500).json({ error: error instanceof Error ? error.message : "Unexpected error" });
     }
 }

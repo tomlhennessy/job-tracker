@@ -2,10 +2,10 @@ export default function Hero() {
     return (
       <section className="text-center py-20 bg-gray-50">
         <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
-          Build <span className="text-gradient">Your Dream</span> AI Resume
+          Build <span className="gradient-text">Your </span>  Dream AI <span className='gradient-text'>Resume</span>
         </h1>
         <p className="mt-4 text-gray-600 text-lg">
-          Get hired faster 🚀 Optimize your resume & cover letters with AI.
+          Get hired faster 💨 Optimise your resume & cover letters with AI.
         </p>
 
         <div className="mt-8 flex justify-center gap-4">

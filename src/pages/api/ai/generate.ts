@@ -20,21 +20,19 @@ export default async function handler(
 
     // ✨ Enhance CV
     if (type === "enhance_cv") {
-      prompt = `You are an expert resume writer specializing in optimizing resumes for Applicant Tracking Systems (ATS).
+      prompt = `
+      You are a professional resume writer. Format the CV below into a clean, modern layout with the following structure:
+      - **Name** (Bold, large font)
+      - **Contact Information** (Email, phone, LinkedIn)
+      - **Professional Summary** (Short paragraph)
+      - **Work Experience** (Company, Role, Dates, Achievements in bullet points)
+      - **Education** (Degree, Institution, Dates)
+      - **Skills** (Bullet points)
 
-      Your goal is to:
-      - Optimize the following resume to be ATS-friendly.
-      - Improve formatting, remove unnecessary graphics or complex layouts.
-      - Incorporate keywords from the job description naturally.
-      - Use strong action verbs, quantify achievements, and ensure clarity.
+      Return the content in Markdown format for easy styling.
 
-      **Job Description:**
-      ${jobDescription}
-
-      **Resume:**
-      ${cv}
-
-      Return the improved, ATS-optimized resume.`;
+      CV: ${cv}
+`;
     }
 
     // 📝 Generate Cover Letter
