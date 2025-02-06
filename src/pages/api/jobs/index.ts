@@ -12,6 +12,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(401).json({ message: "Not authenticated" });
     }
 
+    const existingUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+    });
+
+    if (!existingUser) {
+        return res.status(404).json({ error: "User not found. Please re-login." });
+    }
+
+
     // Add a Job
     if (req.method === "POST") {
         try {
@@ -27,14 +36,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     company,
                     position,
                     status: status || "applied",
-                    jobDescription,
-                    coverLetter,
+                    jobDescription: jobDescription || "",  
+                    coverLetter: coverLetter || "",
                 },
             });
 
             return res.status(201).json(job);
         } catch (error) {
-            console.log("Error: ", error)
+            console.log("Error adding job:", error);
             return res.status(500).json({ error: "Failed to add job" });
         }
     }
