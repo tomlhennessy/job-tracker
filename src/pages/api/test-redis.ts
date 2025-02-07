@@ -1,13 +1,18 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import redis from "@/utils/redis";
+import { NextApiRequest, NextApiResponse } from "next";
+import redis from "@/lib/redis";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    try {
-        await redis.set("testKey", "Hello from Redis!")
-        const value = await redis.get("testKey")
-        res.status(200).json({ message: value })
-    } catch (error) {
-        console.log("error:", error)
-        res.status(500).json({ error: "Redis connection failed" })
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  try {
+    const pong = await redis.ping();
+    res.status(200).json({ success: true, message: pong });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      res.status(500).json({ success: false, error: error.message });
+    } else {
+      res.status(500).json({ success: false, error: "An unknown error occurred" });
     }
+  }
 }
