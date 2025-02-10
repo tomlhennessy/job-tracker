@@ -45,61 +45,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(200).json(formattedResumes as Resume[]);
         }
 
-        if (req.method === "POST") {
-            const { content, isAiGenerated } = req.body;
-
-            // Get the latest version number
-            const latestResume = await prisma.resume.findFirst({
-                where: { userId },
-                orderBy: { version: "desc" },
-            });
-
-            const newVersion = latestResume ? latestResume.version + 1 : 1;
-
-            // Create a new resume version
-            const resume = await prisma.resume.create({
-                data: { userId, version: newVersion, content, isAiGenerated },
-            });
-
-            // Invalidate Redis cache
-            await redis.del(cacheKey);
-
-            return res.status(201).json({
-                ...resume,
-                createdAt: resume.createdAt.toISOString(),
-            } as Resume);
-        }
-
-        if (req.method === "PUT") {
-            const { id, content } = req.body;
-
-            // Update existing resume
-            const updatedResume = await prisma.resume.update({
-                where: { id },
-                data: { content },
-            });
-
-            // Invalidate Redis cache
-            await redis.del(cacheKey);
-
-            return res.status(200).json({
-                ...updatedResume,
-                createdAt: updatedResume.createdAt.toISOString(),
-            });
-        }
-
-        if (req.method === "DELETE") {
-            const { id } = req.body;
-
-            // Delete a specific resume version
-            await prisma.resume.delete({ where: { id } });
-
-            // Invalidate Redis cache
-            await redis.del(cacheKey);
-
-            return res.status(200).json({ message: "Resume deleted" });
-        }
-
         if (req.method === "POST" && req.body.type === "ai_generate") {
             const { rawCV } = req.body;
 
@@ -110,15 +55,52 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
 
             console.log("🤖 Generating Resume with OpenAI...");
-            const prompt = `You are an expert CV writer. Create a professional, ATS-optimized CV based on the following raw text. Structure the output in JSON:
-            - Full Name
-            - Contact Info (email, phone, location, LinkedIn)
-            - Professional Summary
-            - Work Experience (company, role, dates, location, achievements)
-            - Education (degree, institution, dates)
-            - Skills (list)
+            const prompt = `You are a professional resume writer and ATS optimization expert.
+            Your task is to transform the following raw CV text into a **structured, ATS-friendly** JSON resume.
 
-            Raw CV: ${rawCV}`;
+            ### **Guidelines**
+            - **Summarize work experience** into **concise, impact-driven bullet points**.
+            - Extract **keywords from job descriptions** to enhance ATS ranking.
+            - If a section is **missing**, intelligently infer information from experience.
+            - Maintain **professional tone** with clear formatting.
+
+            ### **Resume JSON Structure**
+            {
+            "name": "Full Name",
+            "contact": {
+                "email": "Email",
+                "phone": "Phone Number",
+                "location": "Location",
+                "linkedin": "LinkedIn URL"
+            },
+            "summary": "A strong, 2-3 sentence professional summary.",
+            "experience": [
+                {
+                "company": "Company Name",
+                "role": "Job Title",
+                "dates": "Start - End",
+                "location": "Location",
+                "achievements": [
+                    "Achievement 1 (quantifiable impact, e.g., increased revenue by 20%)",
+                    "Achievement 2",
+                    "Achievement 3"
+                ]
+                }
+            ],
+            "education": [
+                {
+                "degree": "Degree Name",
+                "institution": "University Name",
+                "dates": "Start - End"
+                }
+            ],
+            "skills": ["Skill 1", "Skill 2", "Skill 3"]
+            }
+
+            ### **Raw CV Input**
+            ${rawCV}
+
+            ⚡ **Ensure the output follows the JSON structure above!**`;
 
             const completion = await openai.chat.completions.create({
                 model: "gpt-4o",
@@ -137,7 +119,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const newVersion = latestResume ? latestResume.version + 1 : 1;
 
             const aiResume = await prisma.resume.create({
-                data: { userId, version: newVersion, content: JSON.stringify(structuredData), isAiGenerated: true },
+                data: {
+                    userId,
+                    version: newVersion,
+                    content: JSON.stringify(structuredData),
+                    isAiGenerated: true
+                },
             });
 
             // Convert createdAt to string before caching

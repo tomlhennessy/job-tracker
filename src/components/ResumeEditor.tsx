@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import html2pdf from "html2pdf.js";
-import ResumeTemplate from "./ResumeTemplate"; // ✅ Use ResumeTemplate instead of ResumePreview
+import ResumeTemplate from "./ResumeTemplate"; // ✅ Modern Tailwind resume template
 
 interface ResumeData {
     id: string;
@@ -18,7 +18,7 @@ export default function ResumeEditor() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // Fetch all resume versions
+    // Fetch all resume versions on mount
     useEffect(() => {
         const fetchResumes = async () => {
             try {
@@ -28,6 +28,7 @@ export default function ResumeEditor() {
                 if (data.length > 0) setSelectedResume(data[0]); // Select latest resume by default
             } catch (err) {
                 console.error("Failed to fetch resumes:", err);
+                setError("Failed to load resumes.");
             }
         };
 
@@ -42,7 +43,7 @@ export default function ResumeEditor() {
             const response = await fetch("/api/resume", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ type: "ai_generate", rawCV }),
+                body: JSON.stringify({ type: "ai_generate", rawCV }), // ✅ AI-enhancement request
             });
 
             const data = await response.json();
@@ -93,9 +94,9 @@ export default function ResumeEditor() {
             </h2>
 
             {/* Resume Version Selector */}
-            <label className="block mb-2 text-gray-700">Select Resume Version:</label>
+            <label className="block mb-2 text-gray-700 font-semibold">Select Resume Version:</label>
             <select
-                className="border p-2 rounded-md w-full mb-4"
+                className="border p-2 rounded-md w-full mb-4 focus:ring-2 focus:ring-blue-500"
                 value={selectedResume?.id || ""}
                 onChange={(e) => {
                     const selected = resumes.find((r) => r.id === e.target.value);
@@ -111,19 +112,19 @@ export default function ResumeEditor() {
 
             {/* PREVIEW STATE (Using ResumeTemplate) */}
             {selectedResume && (
-                <ResumeTemplate resume={JSON.parse(selectedResume.content)} /> // ✅ Swapped out ResumePreview for ResumeTemplate
+                <ResumeTemplate resume={JSON.parse(selectedResume.content)} />
             )}
 
-            <div className="flex gap-4 mt-4 justify-center">
+            <div className="flex flex-wrap gap-4 mt-4 justify-center">
                 <button
                     onClick={handleSave}
-                    className="bg-green-500 text-white px-4 py-2 rounded-md shadow-md hover:shadow-lg"
+                    className="bg-green-500 text-white px-4 py-2 rounded-md shadow-md hover:shadow-lg transition"
                 >
                     💾 Save as New Version
                 </button>
                 <button
                     onClick={handleExportPDF}
-                    className="bg-purple-500 text-white px-4 py-2 rounded-md shadow-md hover:shadow-lg"
+                    className="bg-purple-500 text-white px-4 py-2 rounded-md shadow-md hover:shadow-lg transition"
                 >
                     📥 Export to PDF
                 </button>
@@ -131,11 +132,12 @@ export default function ResumeEditor() {
 
             {/* AI ENHANCEMENT */}
             <div className="mt-6">
+                <label className="block mb-2 text-gray-700 font-semibold">Enhance Your Resume with AI:</label>
                 <textarea
                     value={rawCV}
-                    onChange={(e) => setRawCV(e.target.value)}
+                    onChange={(e) => setRawCV(e.target.value)} // ✅ Fixes ESLint issue
                     placeholder="Paste your raw CV here..."
-                    className="w-full p-4 border rounded-md h-48"
+                    className="w-full p-4 border rounded-md h-48 focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                     onClick={handleEnhance}
@@ -146,7 +148,8 @@ export default function ResumeEditor() {
                 </button>
             </div>
 
-            {error && <p className="text-red-500 text-center mt-2">{error}</p>}
+            {/* Error Display */}
+            {error && <p className="text-red-500 text-center mt-2">{error}</p>} {/* ✅ Fixes ESLint issue */}
         </div>
     );
 }
