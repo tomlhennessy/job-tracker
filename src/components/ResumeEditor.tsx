@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import html2pdf from "html2pdf.js";
-import ResumePreview from "./ResumePreview";
+import ResumeTemplate from "./ResumeTemplate"; // ✅ Use ResumeTemplate instead of ResumePreview
 
 interface ResumeData {
     id: string;
@@ -109,9 +109,9 @@ export default function ResumeEditor() {
                 ))}
             </select>
 
-            {/* PREVIEW STATE */}
+            {/* PREVIEW STATE (Using ResumeTemplate) */}
             {selectedResume && (
-                <ResumePreview resume={JSON.parse(selectedResume.content)} />
+                <ResumeTemplate resume={JSON.parse(selectedResume.content)} /> // ✅ Swapped out ResumePreview for ResumeTemplate
             )}
 
             <div className="flex gap-4 mt-4 justify-center">
