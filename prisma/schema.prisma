@@ -15,6 +15,7 @@ model User {
   createdAt      DateTime @default(now())
   resume         String?
   jobs           Job[]
+  resumes        Resume[]
 }
 
 model Job {
@@ -28,4 +29,16 @@ model Job {
   jobDescription String?
   followUpDate   DateTime?
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Resume {
+  id        String   @id @default(uuid())
+  userId    String
+  version   Int      @default(1)
+  content   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, version])
 }
