@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]";
 import OpenAI from "openai";
 import redis from "@/lib/redis";
+import { Resume } from "@/types/resume";
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -15,59 +16,101 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const userId = session.user.id as string; // Ensure userId is always a string
-    const cacheKey = `resume:${userId}`;
+    const userId = session.user.id as string;
+    const cacheKey = `resumes:${userId}`;
 
     try {
         if (req.method === "GET") {
-            // Check cache first
-            const cachedResume = await redis.get(cacheKey);
-            if (cachedResume) {
-                console.log("🚀 Returning cached resume");
-                return res.status(200).json(JSON.parse(cachedResume));
+            // Check Redis cache first
+            const cachedResumes = await redis.get(cacheKey);
+            if (cachedResumes) {
+                return res.status(200).json(JSON.parse(cachedResumes));
             }
 
-            // If no cache, fetch from database
-            console.log("🔄 Fetching resume from database");
-            const user = await prisma.user.findUnique({
-                where: { id: userId },
-                select: { resume: true },
+            // Fetch from PostgreSQL
+            const resumes = await prisma.resume.findMany({
+                where: { userId },
+                orderBy: { version: "desc" },
             });
 
-            if (user?.resume) {
-                // Cache the result for 1 hour (3600 seconds)
-                await redis.setex(cacheKey, 3600, JSON.stringify(user.resume));
-            }
+            // Convert Date to string to prevent TypeScript errors
+            const formattedResumes = resumes.map((resume) => ({
+                ...resume,
+                createdAt: resume.createdAt.toISOString(),
+            }));
 
-            return res.status(200).json(user?.resume);
-        }
+            // Cache for 10 minutes
+            await redis.setex(cacheKey, 600, JSON.stringify(formattedResumes));
 
-        if (req.method === "PUT") {
-            const { resume } = req.body;
-
-            const updatedUser = await prisma.user.update({
-                where: { id: userId },
-                data: { resume },
-            });
-
-            // Invalidate cache when updating
-            await redis.del(cacheKey);
-
-            return res.status(200).json(updatedUser);
+            return res.status(200).json(formattedResumes as Resume[]);
         }
 
         if (req.method === "POST") {
-            const { resume: rawCV } = req.body;
+            const { content, isAiGenerated } = req.body;
 
-            // Check if cached resume already exists (to avoid redundant API calls)
+            // Get the latest version number
+            const latestResume = await prisma.resume.findFirst({
+                where: { userId },
+                orderBy: { version: "desc" },
+            });
+
+            const newVersion = latestResume ? latestResume.version + 1 : 1;
+
+            // Create a new resume version
+            const resume = await prisma.resume.create({
+                data: { userId, version: newVersion, content, isAiGenerated },
+            });
+
+            // Invalidate Redis cache
+            await redis.del(cacheKey);
+
+            return res.status(201).json({
+                ...resume,
+                createdAt: resume.createdAt.toISOString(),
+            } as Resume);
+        }
+
+        if (req.method === "PUT") {
+            const { id, content } = req.body;
+
+            // Update existing resume
+            const updatedResume = await prisma.resume.update({
+                where: { id },
+                data: { content },
+            });
+
+            // Invalidate Redis cache
+            await redis.del(cacheKey);
+
+            return res.status(200).json({
+                ...updatedResume,
+                createdAt: updatedResume.createdAt.toISOString(),
+            });
+        }
+
+        if (req.method === "DELETE") {
+            const { id } = req.body;
+
+            // Delete a specific resume version
+            await prisma.resume.delete({ where: { id } });
+
+            // Invalidate Redis cache
+            await redis.del(cacheKey);
+
+            return res.status(200).json({ message: "Resume deleted" });
+        }
+
+        if (req.method === "POST" && req.body.type === "ai_generate") {
+            const { rawCV } = req.body;
+
+            // Check if cached AI resume exists
             const cachedResume = await redis.get(cacheKey);
             if (cachedResume) {
-                console.log("✅ Returning cached AI-generated resume");
                 return res.status(200).json({ resume: JSON.parse(cachedResume) });
             }
 
-            console.log("🤖 Generating CV with OpenAI...");
-            const prompt = `You are an expert CV writer. Create a professional, ATS-optimized CV based on the following raw text. Structure the output in JSON with:
+            console.log("🤖 Generating Resume with OpenAI...");
+            const prompt = `You are an expert CV writer. Create a professional, ATS-optimized CV based on the following raw text. Structure the output in JSON:
             - Full Name
             - Contact Info (email, phone, location, LinkedIn)
             - Professional Summary
@@ -83,23 +126,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 max_tokens: 800,
             });
 
-            const responseContent = completion.choices[0].message.content;
-            const structuredData = JSON.parse(responseContent || "{}");
+            const structuredData = JSON.parse(completion.choices[0].message.content || "{}");
 
-            // Store the generated CV in the database
-            await prisma.user.update({
-                where: { id: userId },
-                data: { resume: structuredData },
+            // Save AI-generated resume in database as a new version
+            const latestResume = await prisma.resume.findFirst({
+                where: { userId },
+                orderBy: { version: "desc" },
             });
 
-            // Cache the AI-generated CV for 24 hours (86400 seconds)
-            await redis.setex(cacheKey, 86400, JSON.stringify(structuredData));
+            const newVersion = latestResume ? latestResume.version + 1 : 1;
 
-            return res.status(200).json({ resume: structuredData });
+            const aiResume = await prisma.resume.create({
+                data: { userId, version: newVersion, content: JSON.stringify(structuredData), isAiGenerated: true },
+            });
+
+            // Convert createdAt to string before caching
+            const formattedAiResume = {
+                ...aiResume,
+                createdAt: aiResume.createdAt.toISOString(),
+            };
+
+            // Cache AI-generated resume for 24 hours
+            await redis.setex(cacheKey, 86400, JSON.stringify(formattedAiResume));
+
+            return res.status(200).json({ resume: formattedAiResume });
         }
 
         return res.status(405).json({ message: "Method not allowed." });
-    } catch (error: unknown) {
+    } catch (error) {
         console.error("API Error:", error);
         return res.status(500).json({ error: error instanceof Error ? error.message : "Unexpected error" });
     }
