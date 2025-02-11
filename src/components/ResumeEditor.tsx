@@ -1,6 +1,22 @@
 import { useEffect, useState } from "react";
 import html2pdf from "html2pdf.js";
 import ResumeTemplate from "./ResumeTemplate";
+import {
+    DndContext,
+    closestCenter,
+    useSensor,
+    useSensors,
+    PointerSensor,
+    KeyboardSensor,
+    DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    SortableContext,
+    verticalListSortingStrategy,
+    arrayMove,
+    useSortable
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Contact {
     email: string;
@@ -10,6 +26,7 @@ interface Contact {
 }
 
 interface Experience {
+    id: string; // ✅ Added unique ID for drag & drop support
     company: string;
     role: string;
     dates: string;
@@ -41,12 +58,42 @@ interface ResumeData {
     createdAt: string;
 }
 
+// 🏗 Drag & Drop Experience Item Component
+const ExperienceItem = ({ experience }: { experience: Experience }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: experience.id });
+
+    return (
+        <div
+            ref={setNodeRef}
+            {...attributes}
+            {...listeners}
+            style={{
+                transform: CSS.Transform.toString(transform),
+                transition,
+            }}
+            className="border p-2 rounded-md bg-gray-100 cursor-pointer"
+        >
+            <h4 className="font-bold">{experience.role} at {experience.company}</h4>
+            <p className="text-sm">{experience.dates} - {experience.location}</p>
+        </div>
+    );
+};
+
 export default function ResumeEditor() {
+    const [rawCV, setRawCV] = useState("");
     const [resumes, setResumes] = useState<ResumeData[]>([]);
     const [selectedResume, setSelectedResume] = useState<ResumeData | null>(null);
     const [editableResume, setEditableResume] = useState<ResumeContent | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [saving, setSaving] = useState(false);
+
+    // ✅ Ensure Hooks are NOT called conditionally
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor)
+    );
 
     // Fetch all resume versions
     useEffect(() => {
@@ -56,8 +103,8 @@ export default function ResumeEditor() {
                 const data = await response.json();
                 setResumes(data);
                 if (data.length > 0) {
-                    setSelectedResume(data[0]); // Select latest resume by default
-                    setEditableResume(JSON.parse(data[0].content)); // Load editable content
+                    setSelectedResume(data[0]);
+                    setEditableResume(JSON.parse(data[0].content));
                 }
             } catch (err) {
                 console.error("Failed to fetch resumes:", err);
@@ -73,6 +120,7 @@ export default function ResumeEditor() {
         if (!editableResume || !selectedResume) return;
 
         const saveChanges = async () => {
+            setSaving(true);
             try {
                 await fetch("/api/resume", {
                     method: "PUT",
@@ -84,34 +132,39 @@ export default function ResumeEditor() {
                 });
             } catch (error) {
                 console.error("Auto-save failed:", error);
+            } finally {
+                setSaving(false);
             }
         };
 
-        const timeout = setTimeout(saveChanges, 1000); // Auto-save after 1 sec delay
-        return () => clearTimeout(timeout); // Cleanup timeout
+        const timeout = setTimeout(saveChanges, 1000);
+        return () => clearTimeout(timeout);
     }, [editableResume, selectedResume]);
 
-    const handleFieldChange = (field: keyof ResumeContent, value: string | string[]) => {
-        if (!editableResume) return;
-        setEditableResume({ ...editableResume, [field]: value });
-    };
+    const handleEnhance = async () => {
+        setLoading(true);
+        setError("");
 
-    const handleExperienceChange = (index: number, key: keyof Experience, value: string) => {
-        if (!editableResume) return;
-        const updatedExperience = [...editableResume.experience];
-        updatedExperience[index] = { ...updatedExperience[index], [key]: value };
-        setEditableResume({ ...editableResume, experience: updatedExperience });
-    };
+        try {
+            const response = await fetch("/api/resume", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "ai_generate", rawCV }),
+            });
 
-    const handleAddExperience = () => {
-        if (!editableResume) return;
-        setEditableResume({
-            ...editableResume,
-            experience: [
-                ...editableResume.experience,
-                { company: "", role: "", dates: "", location: "", achievements: [] },
-            ],
-        });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "Failed to enhance resume.");
+
+            setResumes([data.resume, ...resumes]);
+            setSelectedResume(data.resume);
+            setEditableResume(JSON.parse(data.resume.content));
+            setRawCV("");
+        } catch (error) {
+            if (error instanceof Error) setError(error.message);
+            else setError("An unexpected error occurred.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleExportPDF = () => {
@@ -121,36 +174,48 @@ export default function ResumeEditor() {
         }
     };
 
+    // ✅ Updated Drag and Drop Handler (No More `any`)
+    const handleDragEnd = (event: DragEndEvent) => {
+        if (!editableResume || !event.active || !event.over) return;
+
+        const activeId = String(event.active.id); // Convert UniqueIdentifier to string
+        const overId = String(event.over.id);
+
+        const oldIndex = editableResume.experience.findIndex(exp => exp.id === activeId);
+        const newIndex = editableResume.experience.findIndex(exp => exp.id === overId);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+            const sortedExperience = arrayMove(editableResume.experience, oldIndex, newIndex);
+            setEditableResume({ ...editableResume, experience: sortedExperience });
+        }
+
     return (
         <div className="bg-white shadow-md rounded-lg p-6 mt-6 max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold text-center gradient-text opacity-90 mb-4">
                 📄 My Resume
             </h2>
 
-            {/* Resume Version Selector */}
-            <label className="block mb-2 text-gray-700 font-semibold">Select Resume Version:</label>
-            <select
-                className="border p-2 rounded-md w-full mb-4 focus:ring-2 focus:ring-blue-500"
-                value={selectedResume?.id || ""}
-                onChange={(e) => {
-                    const selected = resumes.find((r) => r.id === e.target.value);
-                    if (selected) {
-                        setSelectedResume(selected);
-                        setEditableResume(JSON.parse(selected.content));
-                    }
-                }}
-            >
-                {resumes.map((resume) => (
-                    <option key={resume.id} value={resume.id}>
-                        Version {resume.version} - {new Date(resume.createdAt).toLocaleDateString()} {resume.isAiGenerated ? "(AI)" : ""}
-                    </option>
-                ))}
-            </select>
+            {/* RAW CV INPUT */}
+            <div className="mt-6">
+                <textarea
+                    value={rawCV}
+                    onChange={(e) => setRawCV(e.target.value)}
+                    placeholder="Paste your raw CV here..."
+                    className="w-full p-4 border rounded-md h-48"
+                />
+                <button
+                    onClick={handleEnhance}
+                    disabled={loading || !rawCV.trim()}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-md w-full shadow-md hover:shadow-lg transition opacity-80 hover:opacity-100 mt-2"
+                >
+                    {loading ? "Enhancing..." : "✨ Enhance with AI"}
+                </button>
+            </div>
 
             {/* Toggle Between Edit/View Mode */}
-            <div className="flex justify-center gap-4 mb-4">
+            <div className="flex justify-center gap-4 mb-4 mt-6">
                 <button
-                    onClick={() => setIsEditing(!isEditing)}
+                    onClick={() => setIsEditing((prev) => !prev)}
                     className="bg-blue-500 text-white px-4 py-2 rounded-md shadow-md hover:shadow-lg transition"
                 >
                     {isEditing ? "🔄 Switch to Preview" : "✏️ Edit Resume"}
@@ -163,54 +228,23 @@ export default function ResumeEditor() {
                 </button>
             </div>
 
-            {/* EDIT MODE */}
+            {/* Drag & Drop Sorting */}
             {isEditing && editableResume && (
-                <div className="space-y-4">
-                    <input
-                        type="text"
-                        value={editableResume.name}
-                        onChange={(e) => handleFieldChange("name", e.target.value)}
-                        placeholder="Full Name"
-                        className="w-full p-2 border rounded-md"
-                    />
-
-                    <textarea
-                        value={editableResume.summary}
-                        onChange={(e) => handleFieldChange("summary", e.target.value)}
-                        placeholder="Professional Summary"
-                        className="w-full p-2 border rounded-md"
-                    />
-
-                    <h3 className="font-semibold text-lg">Work Experience</h3>
-                    {editableResume.experience.map((exp, index) => (
-                        <div key={index} className="border p-2 rounded-md">
-                            <input
-                                type="text"
-                                value={exp.company}
-                                onChange={(e) => handleExperienceChange(index, "company", e.target.value)}
-                                placeholder="Company"
-                                className="w-full p-2 border rounded-md mb-2"
-                            />
-                            <input
-                                type="text"
-                                value={exp.role}
-                                onChange={(e) => handleExperienceChange(index, "role", e.target.value)}
-                                placeholder="Role"
-                                className="w-full p-2 border rounded-md mb-2"
-                            />
-                        </div>
-                    ))}
-                    <button onClick={handleAddExperience} className="bg-gray-500 text-white px-4 py-2 rounded-md shadow-md hover:shadow-lg">
-                        ➕ Add Experience
-                    </button>
-                </div>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={editableResume.experience.map(exp => exp.id)} strategy={verticalListSortingStrategy}>
+                        {editableResume.experience.map(exp => (
+                            <ExperienceItem key={exp.id} experience={exp} />
+                        ))}
+                    </SortableContext>
+                </DndContext>
             )}
 
             {/* PREVIEW MODE */}
             {!isEditing && selectedResume && <ResumeTemplate resume={editableResume!} />}
 
-            {/* Error Display */}
+            {saving && <p className="text-gray-500 text-center mt-2">💾 Saving changes...</p>}
             {error && <p className="text-red-500 text-center mt-2">{error}</p>}
         </div>
     );
+}
 }
