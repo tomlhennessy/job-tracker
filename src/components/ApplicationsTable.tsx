@@ -50,7 +50,8 @@ export default function ApplicationsTable({
                     </tr>
                 </thead>
                 <tbody>
-                    {applications.map((app) => (
+                {Array.isArray(applications) && applications.length > 0 ? (
+                    applications.map((app) => (
                         <tr key={app.id} className="border-t hover:bg-gray-50 transition">
                             <td className="px-4 py-2">{app.company}</td>
                             <td className="px-4 py-2">{app.position}</td>
@@ -70,8 +71,16 @@ export default function ApplicationsTable({
                                 </button>
                             </td>
                         </tr>
-                    ))}
-                </tbody>
+                    ))
+                ) : (
+                    <tr>
+                        <td colSpan={4} className="text-center text-gray-500 py-4">
+                            No applications
+                        </td>
+                    </tr>
+                )}
+            </tbody>
+
             </table>
         </div>
     );
