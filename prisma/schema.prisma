@@ -37,6 +37,7 @@ model Resume {
   version         Int       @default(1)
   content         String
   isAiGenerated   Boolean   @default(false)
+  isLatest        Boolean   @default(true)
   createdAt       DateTime  @default(now())
 
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)

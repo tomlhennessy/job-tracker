@@ -1,4 +1,6 @@
+
 interface Experience {
+    id: string;
     company: string;
     role: string;
     dates: string;
@@ -32,73 +34,91 @@ interface ResumeData {
 
 interface ResumeTemplateProps {
     resume: ResumeData;
+    onUpdate: (updatedResume: ResumeData) => void;
 }
 
-export default function ResumeTemplate({ resume }: ResumeTemplateProps) {
+export default function ResumeTemplate({ resume, onUpdate }: ResumeTemplateProps) {
+    const handleChange = (field: keyof ResumeData, value: string | Contact) => {
+        if (field === "contact" && typeof value !== "string") {
+            onUpdate({ ...resume, contact: value });
+        } else {
+            onUpdate({ ...resume, [field]: value as string });
+        }
+    };
+
     return (
-        <div id="resume-preview" className="bg-white shadow-lg p-8 rounded-lg max-w-2xl mx-auto">
-            {/* HEADER */}
-            <header className="text-center">
-                <h1 className="text-4xl font-bold text-gray-900">{resume.name}</h1>
-                <p className="text-gray-600">{resume.contact.location}</p>
-                <div className="flex justify-center space-x-4 text-gray-600 mt-2 text-sm">
-                    {resume.contact.email && <span>📧 {resume.contact.email}</span>}
-                    {resume.contact.phone && <span>📞 {resume.contact.phone}</span>}
-                    {resume.contact.linkedin && (
-                        <a href={resume.contact.linkedin} className="text-blue-600 hover:underline">
-                            LinkedIn
-                        </a>
-                    )}
-                    {resume.contact.github && (
-                        <a href={resume.contact.github} className="text-blue-600 hover:underline">
-                            GitHub
-                        </a>
-                    )}
-                    {resume.contact.portfolio && (
-                        <a href={resume.contact.portfolio} className="text-blue-600 hover:underline">
-                            Portfolio
-                        </a>
-                    )}
-                </div>
+        <div id="resume-preview" className="bg-white shadow-lg p-8 rounded-lg max-w-3xl mx-auto border">
+            <header className="text-center border-b pb-4">
+                <input
+                    type="text"
+                    value={resume.name}
+                    onChange={(e) => handleChange("name", e.target.value)}
+                    className="text-4xl font-bold text-gray-900 text-center w-full border-none focus:outline-none"
+                />
+                <input
+                    type="text"
+                    value={resume.contact.location}
+                    onChange={(e) => handleChange("contact", { ...resume.contact, location: e.target.value })}
+                    className="text-gray-600 text-center w-full border-none focus:outline-none"
+                />
             </header>
 
-            {/* SUMMARY */}
-            <section className="mt-6">
+            <section className="mt-6 border-b pb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Professional Summary</h2>
-                <p className="text-gray-700 mt-2">{resume.summary}</p>
+                <textarea
+                    value={resume.summary}
+                    onChange={(e) => handleChange("summary", e.target.value)}
+                    className="w-full border-none focus:outline-none bg-transparent"
+                />
             </section>
 
-            {/* EXPERIENCE */}
-            <section className="mt-6">
+            <section className="mt-6 border-b pb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Work Experience</h2>
                 {resume.experience.map((exp, index) => (
                     <div key={index} className="mt-4">
-                        <h3 className="font-bold text-gray-800">{exp.role} - {exp.company}</h3>
+                        <input
+                            type="text"
+                            value={exp.role}
+                            onChange={(e) => {
+                                const updatedExperience = [...resume.experience];
+                                updatedExperience[index].role = e.target.value;
+                                onUpdate({ ...resume, experience: updatedExperience });
+                            }}
+                            className="font-bold text-gray-800 w-full border-none focus:outline-none"
+                        />
                         <p className="text-sm text-gray-500">{exp.dates} | {exp.location}</p>
-                        <ul className="list-disc list-inside text-gray-700 mt-2">
-                            {exp.achievements.map((ach, i) => (
-                                <li key={i}>{ach}</li>
-                            ))}
-                        </ul>
                     </div>
                 ))}
             </section>
 
-            {/* EDUCATION */}
-            <section className="mt-6">
+            <section className="mt-6 border-b pb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Education</h2>
                 {resume.education.map((edu, index) => (
                     <div key={index} className="mt-4">
-                        <h3 className="font-bold text-gray-800">{edu.degree}</h3>
+                        <input
+                            type="text"
+                            value={edu.degree}
+                            onChange={(e) => {
+                                const updatedEducation = [...resume.education];
+                                updatedEducation[index].degree = e.target.value;
+                                onUpdate({ ...resume, education: updatedEducation });
+                            }}
+                            className="font-bold text-gray-800 w-full border-none focus:outline-none"
+                        />
                         <p className="text-sm text-gray-500">{edu.institution} | {edu.dates}</p>
                     </div>
                 ))}
             </section>
 
-            {/* SKILLS */}
             <section className="mt-6">
                 <h2 className="text-lg font-semibold text-gray-900">Skills</h2>
-                <p className="text-gray-700 mt-2">{resume.skills.join(", ")}</p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                    {resume.skills.map((skill, index) => (
+                        <span key={index} className="bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-sm">
+                            {skill}
+                        </span>
+                    ))}
+                </div>
             </section>
         </div>
     );
