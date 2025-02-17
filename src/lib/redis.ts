@@ -1,14 +1,13 @@
-import { createClient } from "redis";
+import Redis from "ioredis";
 
-const redis = createClient({
-    url: process.env.REDIS_URL || `rediss://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
-    socket: {
-        tls: true,
-    },
+// Connect to Redis inside the same Elastic Beanstalk environment
+const redis = new Redis({
+  host: process.env.REDIS_HOST || "redis", // "redis" refers to the container name
+  port: Number(process.env.REDIS_PORT) || 6379,
 });
 
 redis.on("error", (err: Error) => {
-    console.error("❌ Redis Client Error:", err);
+  console.error("❌ Redis Client Error:", err);
 });
 
 export default redis;

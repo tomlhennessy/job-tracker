@@ -1,43 +1,22 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import OpenAI from "openai";
+import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { type, cv, jobDescription } = req.body;
+    const { jobId, cv, jobDescription } = req.body;
 
-    if (!type || (type === "enhance_cv" && !cv) || (type === "cover_letter" && (!cv || !jobDescription))) {
+    if (!jobId || !cv || !jobDescription) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    let prompt = "";
-
-    // ✨ Enhance CV
-    if (type === "enhance_cv") {
-      prompt = `
-      You are a professional resume writer. Format the CV below into a clean, modern layout with the following structure:
-      - **Name** (Bold, large font)
-      - **Contact Information** (Email, phone, LinkedIn)
-      - **Professional Summary** (Short paragraph)
-      - **Work Experience** (Company, Role, Dates, Achievements in bullet points)
-      - **Education** (Degree, Institution, Dates)
-      - **Skills** (Bullet points)
-
-      Return the content in Markdown format for easy styling.
-
-      CV: ${cv}
-`;
-    }
-
-    // 📝 Generate Cover Letter
-    if (type === "cover_letter") {
-      prompt = `You are an expert cover letter writer focused on creating ATS-friendly cover letters.
+    const prompt = `
+      You are an expert cover letter writer focused on creating ATS-friendly cover letters.
 
       Your task is to:
       - Write a professional cover letter based on the provided resume and job description.
@@ -52,47 +31,25 @@ export default async function handler(
       ${cv}
 
       Return an ATS-optimized cover letter in a professional tone.`;
-    }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o", // ✅ Using GPT-4o for better performance and cost-efficiency
+      model: "gpt-4o",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 800, // ✅ Limiting tokens to control cost
+      max_tokens: 800,
     });
 
     const result = completion.choices[0].message.content;
 
-    // ✅ Guard Clause for Usage Tracking
-    const usage = completion.usage;
-    if (usage) {
-      console.log("Tokens Used:", usage);
+    // Save the cover letter to Prisma
+    const updatedJob = await prisma.job.update({
+      where: { id: jobId },
+      data: { coverLetter: result },
+    });
 
-      // 🚨 Cost Estimation (adjust based on OpenAI pricing)
-      const inputCost = (usage.prompt_tokens / 1000) * 0.0005;
-      const outputCost = (usage.completion_tokens / 1000) * 0.0015;
-      const totalCost = (inputCost + outputCost).toFixed(6); // 6 decimal places for small amounts
+    return res.status(200).json({ result, updatedJob });
 
-      console.log(`Estimated Cost: $${totalCost}`);
-
-      // ✅ Safety Check: Prevent costly requests
-      if (usage.total_tokens > 1500) {
-        throw new Error("Token limit exceeded. Please shorten your input.");
-      }
-
-      return res.status(200).json({ result, cost: totalCost });
-    } else {
-      console.warn("Token usage data is unavailable.");
-    }
-
-    return res.status(200).json({ result });
-
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("OpenAI API Error:", error);
-
-    if (error instanceof Error) {
-      return res.status(500).json({ error: error.message });
-    } else {
-      return res.status(500).json({ error: "An unexpected error occurred." });
-    }
+    return res.status(500).json({ error: "Failed to generate cover letter" });
   }
 }

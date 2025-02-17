@@ -1,0 +1,19 @@
+
+
+services:
+  backend:
+    build: .
+    ports:
+      - "3001:3001"
+    depends_on:
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://postgresql:Goodlife24!@appli-sh-db.cpw2usauyzhe.us-east-1.rds.amazonaws.com:5432/appli-sh-db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
