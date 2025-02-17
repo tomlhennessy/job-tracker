@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]";
 import OpenAI from "openai";
+import redis from "@/lib/redis"; // Import Redis
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -14,34 +15,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(401).json({ message: "Unauthorized" });
     }
 
+    const userId = session.user.id;
+    const cacheKey = `resume:${userId}`;
+
     try {
         if (req.method === "GET") {
             try {
-                const { userId } = req.query; // Accept userId as a query param
-
-                if (!userId || typeof userId !== "string") {
-                    return res.status(400).json({ error: "Missing or invalid userId" });
+                // Check Redis Cache First
+                const cachedResume = await redis.get(cacheKey);
+                if (cachedResume) {
+                    console.log("Returning cached resume");
+                    return res.status(200).json(JSON.parse(cachedResume));
                 }
 
-                const resumes = await prisma.resume.findMany({
-                    where: { userId },
-                    orderBy: { version: "desc" }, // Return versions in descending order
+                // If no cache, fetch from PostgreSQL
+                console.log("Fetching resume from database");
+                const resume = await prisma.resume.findFirst({
+                    where: { userId, isLatest: true },
+                    orderBy: { version: "desc" },
                 });
 
-                return res.status(200).json(resumes);
+                if (!resume) {
+                    return res.status(404).json({ error: "No resume found" });
+                }
+
+                // Cache result for 1 hour (3600 seconds)
+                await redis.setex(cacheKey, 3600, JSON.stringify(resume));
+
+                return res.status(200).json(resume);
             } catch (error) {
-                console.error("Error fetching resumes:", error);
-                return res.status(500).json({ error: "Failed to retrieve resumes" });
+                console.error("Error fetching resume:", error);
+                return res.status(500).json({ error: "Failed to retrieve resume" });
             }
         }
 
-
         if (req.method === "POST" && req.body.type === "ai_generate") {
             try {
-                const { userId, rawCV } = req.body;
+                const { rawCV } = req.body;
 
-                if (!userId || !rawCV) {
-                    return res.status(400).json({ error: "Missing required fields" });
+                if (!rawCV) {
+                    return res.status(400).json({ error: "Missing CV content" });
                 }
 
                 // Mark previous versions as not latest
@@ -52,7 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
                 console.log("🤖 Generating Resume with OpenAI...");
                 const prompt = `
-                You are an ATS-optimized resume writer. Your task is to take the provided raw CV content and format it into a structured JSON format that fits within a resume template. Make sure to structure it clearly.
+                You are an ATS-optimized resume writer. Your task is to take the provided raw CV content and format it into a structured JSON format that fits within a resume template.
 
                 ### Output Format (Must be JSON)
                 {
@@ -73,7 +86,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                             "dates": "Start Date - End Date",
                             "location": "City, Country",
                             "achievements": [
-                                "Key achievement 1 (quantifiable impact, e.g., increased revenue by 20%)",
+                                "Key achievement 1",
                                 "Key achievement 2",
                                 "Key achievement 3"
                             ]
@@ -89,11 +102,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     "skills": ["Skill 1", "Skill 2", "Skill 3"]
                 }
 
-                ### Guidelines:
-                - Use clear, structured JSON format.
-                - **DO NOT** return freeform text. Only return **valid JSON**.
-                - If some data is missing, intelligently infer based on the provided CV.
-
                 ### Raw CV:
                 ${rawCV}
                 `;
@@ -104,7 +112,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     max_tokens: 800,
                 });
 
-                // Ensure AI output is valid JSON
                 let structuredData;
                 try {
                     structuredData = JSON.parse(completion.choices[0].message.content || "{}");
@@ -113,7 +120,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     return res.status(500).json({ error: "Invalid AI-generated response" });
                 }
 
-                // Find the latest version number
+                // Find latest version number
                 const latestResume = await prisma.resume.findFirst({
                     where: { userId },
                     orderBy: { version: "desc" },
@@ -121,7 +128,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
                 const newVersion = latestResume ? latestResume.version + 1 : 1;
 
-                // Save AI-generated resume as the latest version
+                // Save AI-generated resume
                 const aiResume = await prisma.resume.create({
                     data: {
                         userId,
@@ -132,14 +139,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     },
                 });
 
+                // Update Redis Cache
+                await redis.setex(cacheKey, 3600, JSON.stringify(aiResume));
+
                 return res.status(200).json({ resume: aiResume });
             } catch (error) {
                 console.error("Error generating AI resume:", error);
                 return res.status(500).json({ error: "Failed to generate resume" });
             }
         }
-
-
 
         return res.status(405).json({ message: "Method not allowed." });
     } catch (error) {
