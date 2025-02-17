@@ -1,26 +1,26 @@
-# Use Node 20
+# Use Node 20 (since your Next.js project uses it)
 FROM node:20
 
-# Set the working directory inside the container
+# Set working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json first (for caching)
+# Copy package.json and package-lock.json first (to leverage caching)
 COPY package.json package-lock.json ./
 
-# Install only production dependencies
-RUN npm install --production
-
-# Copy the Prisma schema directory
+# ✅ Copy the entire `prisma/` directory explicitly
 COPY prisma ./prisma
 
-# Copy the rest of the application files
+# Install dependencies
+RUN npm install --production
+
+# ✅ Copy the rest of the app (excluding node_modules)
 COPY . .
 
-# Run Prisma generate to create the Prisma client
+# ✅ Run Prisma generate inside Docker
 RUN npx prisma generate --schema=prisma/schema.prisma
 
-# Expose the application port (adjust if needed)
+# Expose the application port
 EXPOSE 3000
 
-# Start the application
+# Start the app
 CMD ["npm", "start"]
