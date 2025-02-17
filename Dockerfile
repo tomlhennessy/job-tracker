@@ -1,29 +1,32 @@
-# Use Node 20 (since your Next.js project uses it)
+# Use Node 20 as the base image
 FROM node:20
 
-# Set working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json first (to leverage caching)
+# Copy package.json and package-lock.json first (to leverage Docker caching)
 COPY package.json package-lock.json ./
 
-# ✅ Copy the entire `prisma/` directory explicitly
+# Ensure Prisma schema is copied **before** npm install
 COPY prisma ./prisma
 
-# Install dependencies
-RUN npm install --production
+# Remove any pre-existing node_modules (avoid cross-OS issues)
+RUN rm -rf node_modules
 
-# ✅ Copy the rest of the app (excluding node_modules)
+# Install production dependencies inside Docker
+RUN npm install --omit=dev
+
+# Copy the rest of the app (excluding node_modules)
 COPY . .
 
-# ✅ Run Prisma generate inside Docker
+# Generate Prisma client
 RUN npx prisma generate --schema=prisma/schema.prisma
 
-# ✅ Build the Next.js project for production
+# Build the Next.js application
 RUN npm run build
 
-# ✅ Expose the correct port for Elastic Beanstalk (AWS expects 8080)
+# Expose port 8080
 EXPOSE 8080
 
-# ✅ Start the Next.js production server on port 8080
+# Start the Next.js app
 CMD ["npm", "start"]
