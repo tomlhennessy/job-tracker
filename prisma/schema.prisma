@@ -32,15 +32,14 @@ model Job {
 }
 
 model Resume {
-  id              String    @id @default(uuid())
-  userId          String
-  version         Int       @default(1)
-  content         String
-  isAiGenerated   Boolean   @default(false)
-  isLatest        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(uuid())
+  userId        String
+  version       Int      @default(1)
+  content       String
+  createdAt     DateTime @default(now())
+  isAiGenerated Boolean  @default(false)
+  isLatest      Boolean  @default(true)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, version])
 }

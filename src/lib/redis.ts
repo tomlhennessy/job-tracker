@@ -1,9 +1,14 @@
-import Redis from "ioredis";
+import { createClient } from "redis";
 
-const redis = new Redis({
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379", 10),
-  tls: process.env.REDIS_HOST === "localhost" ? undefined : { rejectUnauthorized: false }, // Disable TLS verification for SSH tunnel
+const redis = createClient({
+    url: process.env.REDIS_URL,
+    socket: {
+        tls: true,
+    },
+});
+
+redis.on("error", (err: Error) => {
+    console.error("❌ Redis Client Error:", err);
 });
 
 export default redis;
