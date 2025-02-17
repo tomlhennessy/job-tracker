@@ -26,4 +26,4 @@ RUN npm run build
 EXPOSE 8080
 
 # ✅ Start the Next.js production server on port 8080
-CMD ["npm", "start", "-p", "8080"]
+CMD ["npm", "start"]
