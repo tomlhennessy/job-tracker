@@ -19,8 +19,11 @@ COPY . .
 # ✅ Run Prisma generate inside Docker
 RUN npx prisma generate --schema=prisma/schema.prisma
 
-# Expose the application port
-EXPOSE 3000
+# ✅ Build the Next.js project for production
+RUN npm run build
 
-# Start the app
-CMD ["npm", "start"]
+# ✅ Expose the correct port for Elastic Beanstalk (AWS expects 8080)
+EXPOSE 8080
+
+# ✅ Start the Next.js production server on port 8080
+CMD ["npm", "start", "-p", "8080"]
