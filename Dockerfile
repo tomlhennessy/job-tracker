@@ -13,14 +13,17 @@ COPY prisma ./prisma
 # Remove any pre-existing node_modules (avoid cross-OS issues)
 RUN rm -rf node_modules
 
-# Install production dependencies inside Docker
-RUN npm install --omit=dev
+# Install **all** dependencies (including dev dependencies, needed for ESLint)
+RUN npm install
 
-# Copy the rest of the app (excluding node_modules)
+# Copy the rest of the app
 COPY . .
 
 # Generate Prisma client
 RUN npx prisma generate --schema=prisma/schema.prisma
+
+# Ensure ESLint is installed (to prevent Next.js build failure)
+RUN npm install --save-dev eslint @types/ioredis
 
 # Build the Next.js application
 RUN npm run build
