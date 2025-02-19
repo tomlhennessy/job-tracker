@@ -4,10 +4,13 @@ FROM node:20
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json first
+# Copy package.json and package-lock.json first (to leverage Docker caching)
 COPY package.json package-lock.json ./
 
-# Install dependencies
+# Ensure Prisma schema is copied **before** npm install
+COPY prisma ./prisma
+
+# Install all dependencies (including dev dependencies)
 RUN npm install
 
 # Copy the rest of the app
@@ -18,9 +21,6 @@ RUN npx prisma generate --schema=prisma/schema.prisma
 
 # Expose port 8080
 EXPOSE 8080
-
-# Use volumes for live reload
-VOLUME ["/app"]
 
 # Start in development mode with hot reload
 CMD ["npm", "run", "dev"]
