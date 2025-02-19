@@ -1,19 +1,35 @@
-
-
+version: "3"
 services:
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev  # Use the development Dockerfile
     ports:
       - "8080:8080"
+    volumes:
+      - .:/app  # Sync local files with container
+      - /app/node_modules  # Prevent overwriting node_modules
     depends_on:
       - redis
+      - db
     environment:
-      - DATABASE_URL=postgresql://postgresql:Goodlife24!@appli-sh-db.cpw2usauyzhe.us-east-1.rds.amazonaws.com:5432/appli-sh-db
+      - DATABASE_URL=postgresql://postgres:password@db:5432/my_local_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    command: npm run dev  # Run in dev mode
 
   redis:
     image: redis:latest
     restart: always
     ports:
       - "6379:6379"
+
+  db:
+    image: postgres:latest
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: my_local_db

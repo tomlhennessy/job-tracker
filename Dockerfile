@@ -14,7 +14,7 @@ COPY prisma ./prisma
 RUN rm -rf node_modules
 
 # Install **all** dependencies (including dev dependencies, needed for ESLint)
-RUN npm install
+RUN npm install --omit=dev
 
 # Copy the rest of the app
 COPY . .
