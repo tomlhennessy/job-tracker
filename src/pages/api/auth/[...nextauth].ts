@@ -86,7 +86,7 @@ export const authOptions: NextAuthOptions = {
         async redirect({ url, baseUrl }) {
             console.log("Redirecting to:", url);
             if (url.includes("/api/auth/error")) {
-                return baseUrl + "/login"; // Send failed logins to login page
+                return baseUrl + "/login"; // Redirect failed logins to the login page
             }
             return url.startsWith(baseUrl) ? url : baseUrl + "/dashboard";
         },

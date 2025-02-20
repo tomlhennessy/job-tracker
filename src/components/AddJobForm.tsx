@@ -8,7 +8,7 @@ export default function AddJobForm({ refreshApplications }: { refreshApplication
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const res = await fetch("/api/jobs", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jobs`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ company, position, status }),

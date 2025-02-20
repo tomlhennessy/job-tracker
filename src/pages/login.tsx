@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 export default function Login() {
-    const { data: session, status } = useSession();
+    const { status } = useSession();
     const router = useRouter();
 
     // Define state variables for email and password

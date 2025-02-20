@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useSession, signOut, signIn } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/router";
 
 export default function Navbar() {
