@@ -1,28 +1,29 @@
 import { signIn, useSession } from "next-auth/react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 export default function Login() {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const router = useRouter();
 
     // Define state variables for email and password
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
+    // Remove auto-redirect to dashboard (fixes instant redirect bug)
     useEffect(() => {
-        if (session) {
+        if (status === "authenticated") {
             router.push("/dashboard");
         }
-    }, [session, router]);
+    }, [status, router]);
 
     const handleEmailLogin = async () => {
-        // Use state variables for authentication
         const result = await signIn("credentials", {
             email,
             password,
-            callbackUrl: "/dashboard",
-            redirect: false, // Prevent full page reload
+            callbackUrl: process.env.NEXT_PUBLIC_API_URL + "/dashboard",
+            redirect: false,
         });
 
         if (result?.error) {
@@ -37,14 +38,14 @@ export default function Login() {
             <h1 className='text-4xl font-bold text-center gradient-text p-6'>Appli.sh</h1>
 
             <button
-                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                onClick={() => signIn("google", { callbackUrl: process.env.NEXTAUTH_URL + "/dashboard" })}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg"
             >
                 Sign in with Google
             </button>
 
             <button
-                onClick={() => signIn("github")}
+                onClick={() => signIn("github", { callbackUrl: process.env.NEXTAUTH_URL + "/dashboard" })}
                 className="px-4 py-2 mt-2 bg-gray-800 text-white rounded-lg"
             >
                 Sign in with GitHub
@@ -72,6 +73,9 @@ export default function Login() {
                 >
                     Sign in with Email
                 </button>
+                <div>
+                    <p>Not registered? <Link href='/register'>Sign Up</Link></p>
+                </div>
             </div>
         </div>
     );

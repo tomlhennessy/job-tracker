@@ -45,6 +45,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/redis": "^4.0.10",
+    "@types/webpack": "^5.28.5",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.20.1",
     "eslint-config-next": "15.1.6",

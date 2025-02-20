@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { useSession, signOut, signIn } from "next-auth/react";
+import { useRouter } from "next/router";
 
 export default function Navbar() {
   const { data: session } = useSession(); // Check if user is logged in
+  const router = useRouter()
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
         <Link href="/" className="text-2xl font-bold gradient-text">
-          Appli.sh 🚀
+          Appli.sh 🚀 (Updated)
         </Link>
 
         <div className="space-x-6">
@@ -28,7 +30,7 @@ export default function Navbar() {
                 AI Resume & Cover Letters
               </Link>
               <button
-                onClick={() => signOut()}
+                onClick={() => signOut({ callbackUrl: "/" })}
                 className="px-4 py-2 bg-red-500 text-white rounded-md shadow hover:bg-red-600 transition"
               >
                 Logout
@@ -36,7 +38,7 @@ export default function Navbar() {
             </>
           ) : (
             <button
-              onClick={() => signIn()}
+              onClick={() => router.push("/login")}
               className="px-4 py-2 bg-blue-500 text-white rounded-md shadow hover:bg-blue-600 transition"
             >
               Login

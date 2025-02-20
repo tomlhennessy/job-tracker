@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     ports:
-      - "8080:8080"
+      - "3000:3000"
     volumes:
       - .:/app  # Sync local files with the container
       - /app/node_modules  # Prevents overwriting node_modules
