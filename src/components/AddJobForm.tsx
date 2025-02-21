@@ -8,21 +8,35 @@ export default function AddJobForm({ refreshApplications }: { refreshApplication
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jobs`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ company, position, status }),
-        });
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jobs`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token") || ""}`, // ✅ Include JWT if using token-based auth
+                },
+                credentials: "include", // ✅ Required if using NextAuth.js or session-based auth
+                body: JSON.stringify({ company, position, status }),
+            });
 
-        if (res.ok) {
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Failed to add job.");
+            }
+
             refreshApplications();
             setCompany("");
             setPosition("");
             setStatus("applied");
-        } else {
-            alert("❌ Failed to add job.");
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                alert(`❌ ${error.message}`);
+            } else {
+                alert("❌ An unknown error occurred.");
+            }
         }
     };
+
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 mb-6">

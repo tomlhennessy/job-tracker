@@ -11,7 +11,7 @@ const prisma = new PrismaClient({
         url: process.env.DATABASE_URL,  // ✅ Ensures Prisma reads the correct DB URL
       },
     },
-  });
+});
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -34,43 +34,39 @@ export const authOptions: NextAuthOptions = {
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
-                if (!credentials?.email || !credentials?.password) {
-                    throw new Error("Email and password required");
+                try {
+                    if (!credentials?.email || !credentials?.password) {
+                        throw new Error("Email and password are required");
+                    }
+
+                    const user = await prisma.user.findUnique({
+                        where: { email: credentials.email },
+                    });
+
+                    if (!user || !user.hashedPassword) {
+                        throw new Error("Invalid credentials");
+                    }
+
+                    const isValid = await bcrypt.compare(credentials.password, user.hashedPassword);
+                    if (!isValid) {
+                        throw new Error("Invalid credentials");
+                    }
+
+                    return user;
+                } catch (error: unknown) {
+                    if (error instanceof Error) {
+                        console.error("❌ Authentication Error:", error.message);
+                        throw new Error(error.message);
+                    }
+                    console.error("❌ Authentication Error: Unknown error occurred");
+                    throw new Error("Internal Server Error");
                 }
-
-                const user = await prisma.user.findUnique({
-                    where: { email: credentials.email },
-                });
-
-                if (!user || !user.hashedPassword) {
-                    throw new Error("Invalid credentials");
-                }
-
-                const isValid = await bcrypt.compare(credentials.password, user.hashedPassword);
-                if (!isValid) {
-                    throw new Error("Invalid credentials");
-                }
-
-                return user;
             },
         }),
     ],
     session: {
         strategy: "jwt",
     },
-
-    cookies: {
-        sessionToken: {
-            name: `next-auth.session-token.${process.env.NODE_ENV}`,
-            options: {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "lax",
-                path: "/",
-            },
-        },
-    },
-
     callbacks: {
         async jwt({ token, user, account }) {
             if (user) {
@@ -80,7 +76,6 @@ export const authOptions: NextAuthOptions = {
             }
             return token;
         },
-
         async session({ session, token }) {
             if (session?.user) {
                 session.user.id = token.id as string;
@@ -88,7 +83,6 @@ export const authOptions: NextAuthOptions = {
             }
             return session;
         },
-
         async redirect({ url, baseUrl }) {
             console.log("Redirecting to:", url);
             if (url.includes("/api/auth/error")) {
@@ -97,7 +91,6 @@ export const authOptions: NextAuthOptions = {
             return url.startsWith(baseUrl) ? url : baseUrl + "/dashboard";
         },
     },
-
     secret: process.env.NEXTAUTH_SECRET,
     debug: true, // Enable debugging in logs
 };

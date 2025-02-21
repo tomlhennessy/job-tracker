@@ -5,7 +5,6 @@ import jwt from "jsonwebtoken";
 
 const prisma = new PrismaClient();
 
-
 export const config = {
   api: {
     bodyParser: true,
@@ -32,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
         email,
@@ -42,26 +41,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const token = jwt.sign(
-      {id: user.id, email: user.email},
+      { id: user.id, email: user.email },
       process.env.NEXTAUTH_SECRET!,
-      {expiresIn: "7d"}
-    )
-    console.log("User registered and token generated")
+      { expiresIn: "7d" }
+    );
 
+    console.log("✅ User registered successfully");
     return res.status(201).json({
       message: "User registered successfully",
-      user,
+      user: { id: user.id, email: user.email, name: user.name },
       token,
-    })
+    });
 
-  } catch (error) {
-    // TypeScript error handling:
+  } catch (error: unknown) {
     if (error instanceof Error) {
-      console.log("Stack Trace:", error.stack);
+      console.error("❌ Registration Error:", error.message);
       return res.status(500).json({ message: error.message });
-    } else {
-      console.log("Unknown Error:", error);
-      return res.status(500).json({ message: "An unknown error occurred" });
+      }
+      console.error("❌ Registration Error: Unknown error occurred");
+      return res.status(500).json({ message: "Internal Server Error" });
     }
-  }
 }
