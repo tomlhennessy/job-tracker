@@ -21,7 +21,7 @@ export default function ApplicationsTable({
 
         if (confirmDelete) {
             try {
-                const response = await fetch(`/api/jobs?id=${id}`, {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jobs?id=${id}`, {
                     method: "DELETE",
                 });
 

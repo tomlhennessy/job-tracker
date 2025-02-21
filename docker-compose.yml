@@ -1,21 +1,37 @@
-
 services:
   backend:
     build:
       context: .
       dockerfile: Dockerfile.dev
     ports:
-      - "3000:3000"
-    volumes:
-      - .:/app  # Sync local files with the container
-      - /app/node_modules  # Prevents overwriting node_modules
-      - ./prisma:/app/prisma  # Ensures Prisma schema is available inside the container
+      - "8080:8080"
+      - "5555:5555" # prisma studio
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/my_local_db
+      - REDIS_HOST=redis
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXT_PUBLIC_API_URL=http://backend:8080  # 👈 Fix: Use "backend" inside Docker!
+      - PORT=8080
     depends_on:
       - redis
       - db
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/my_local_db
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./prisma:/app/prisma
     command: npm run dev
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8080  # 👈 Frontend must call backend via service name!
+      - NEXTAUTH_URL=http://localhost:3000
+    depends_on:
+      - backend
 
   redis:
     image: redis:latest
@@ -32,3 +48,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: my_local_db
+
+networks:
+  default:
+    name: job-tracker-network

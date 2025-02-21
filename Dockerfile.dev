@@ -19,8 +19,8 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate --schema=prisma/schema.prisma
 
-# Expose port 8080
-EXPOSE 8080
+# Expose both frontend (3000) and backend (8080)
+EXPOSE 3000 8080
 
-# Start in development mode with hot reload
+# Start Next.js in development mode (auto-detect frontend or backend)
 CMD ["npm", "run", "dev"]

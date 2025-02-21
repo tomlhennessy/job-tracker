@@ -53,7 +53,7 @@ export default function ResumeEditor() {
     useEffect(() => {
         const fetchResumes = async () => {
             try {
-                const response = await fetch("/api/resume");
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/resume`);
                 const data = await response.json();
                 setResumes(Array.isArray(data) ? data : []);
                 if (data.length > 0) {

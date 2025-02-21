@@ -5,7 +5,13 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,  // ✅ Ensures Prisma reads the correct DB URL
+      },
+    },
+  });
 
 export const authOptions: NextAuthOptions = {
     providers: [

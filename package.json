@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "docker:dev": "NODE_ENV=development nodemon --legacy-watch --exec node server.js",
-    "build": "next build",
-    "start": "next start -p 8080 -H 0.0.0.0",
-    "lint": "next lint",
-    "postinstall": "prisma generate"
+  "dev": "next dev", 
+  "docker:backend": "PORT=8080 next dev -p 8080 -H 0.0.0.0",
+  "docker:frontend": "PORT=3000 next dev -p 3000 -H 0.0.0.0",
+  "build": "next build",
+  "start": "next start -p 8080 -H 0.0.0.0",
+  "lint": "next lint",
+  "postinstall": "prisma generate"
   },
   "prisma": {
     "schema": "prisma/schema.prisma"
