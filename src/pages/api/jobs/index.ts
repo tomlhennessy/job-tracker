@@ -3,10 +3,11 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { authOptions } from "../auth/[...nextauth]";
 import { getServerSession } from "next-auth";
 import redis from "@/lib/redis";
+import { allowCors } from "@/lib/cors";
 
 const prisma = new PrismaClient();
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
     const session = await getServerSession(req, res, authOptions);
 
     // Ensure the user is authenticated
@@ -123,3 +124,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(405).json({ message: "Method not allowed" });
 }
+
+export default allowCors(handler)

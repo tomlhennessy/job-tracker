@@ -1,13 +1,14 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import OpenAI from "openai";
 import { PrismaClient } from "@prisma/client";
+import { allowCors } from "@/lib/cors";
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const { jobId, cv, jobDescription } = req.body;
 
@@ -53,3 +54,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: "Failed to generate cover letter" });
   }
 }
+
+export default allowCors(handler);

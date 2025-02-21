@@ -4,11 +4,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]";
 import OpenAI from "openai";
 import redis from "@/lib/redis"; // Import Redis
+import { allowCors } from "@/lib/cors";
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
     const session = await getServerSession(req, res, authOptions);
 
     if (!session?.user?.id) {
@@ -155,3 +156,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ error: error instanceof Error ? error.message : "Unexpected error" });
     }
 }
+
+export default allowCors(handler)
