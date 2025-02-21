@@ -36,18 +36,9 @@ export default function Dashboard() {
 
     const fetchApplications = async () => {
         try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                alert("❌ Authentication required. Please log in.");
-                return;
-            }
-
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jobs`, {
                 method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`, // ✅ Ensures JWT authentication
-                },
-                credentials: "include", // ✅ Required for session-based authentication
+                credentials: "include", // ✅ Ensures cookies are sent with the request
             });
 
             const data = await res.json();
@@ -62,7 +53,6 @@ export default function Dashboard() {
             alert("❌ Could not load job applications. Please try again.");
         }
     };
-
 
     if (loading) return <p>Loading...</p>;
 

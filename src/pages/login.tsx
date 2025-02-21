@@ -11,7 +11,7 @@ export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    // Remove auto-redirect to dashboard (fixes instant redirect bug)
+    // Prevent redirect loop when already authenticated
     useEffect(() => {
         if (status === "authenticated") {
             router.push("/dashboard");
@@ -23,7 +23,7 @@ export default function Login() {
             const result = await signIn("credentials", {
                 email,
                 password,
-                redirect: false, // Prevents automatic redirection
+                redirect: false, // ✅ Prevents automatic redirection
             });
 
             if (result?.error) {
@@ -32,27 +32,13 @@ export default function Login() {
                 return;
             }
 
-            // Fetch session token (JWT) and store it in a cookie
-            const sessionRes = await fetch("/api/auth/session");
-            const sessionData = await sessionRes.json();
-
-            if (sessionData?.accessToken) {
-                await fetch("/api/auth/set-token", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ token: sessionData.accessToken }),
-                });
-            }
-
+            // ✅ JWT is now stored in cookies automatically, no need for manual storage.
             router.push("/dashboard"); // Redirect user after login
         } catch (error) {
             console.error("❌ Login Error:", error);
             alert("❌ An error occurred during login. Please try again.");
         }
     };
-
-
-
 
     return (
         <div className='flex flex-col items-center justify-center h-screen'>
@@ -71,7 +57,6 @@ export default function Login() {
             >
                 Sign in with GitHub
             </button>
-
 
             {/* Input fields for email & password */}
             <div className="flex flex-col gap-2 mt-4">

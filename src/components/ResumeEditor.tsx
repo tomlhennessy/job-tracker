@@ -53,23 +53,13 @@ export default function ResumeEditor() {
     useEffect(() => {
         const fetchResumes = async () => {
             try {
-                const token = localStorage.getItem("token");
-                if (!token) {
-                    alert("❌ Authentication required. Please log in.");
-                    return;
-                }
-
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/resume`, {
                     method: "GET",
-                    headers: {
-                        "Authorization": `Bearer ${token}`, // Ensures JWT authentication
-                    },
-                    credentials: "include", // Required for session-based authentication (NextAuth.js)
+                    credentials: "include", // Ensures cookies are sent automatically
                 });
 
                 const data = await response.json();
                 if (!response.ok) {
-                    console.error("❌ API Error:", data);
                     throw new Error(data.message || "Failed to fetch resumes.");
                 }
 
@@ -87,8 +77,6 @@ export default function ResumeEditor() {
         fetchResumes();
     }, []);
 
-
-
     useEffect(() => {
         if (!selectedResume) return;
         try {
@@ -101,25 +89,15 @@ export default function ResumeEditor() {
 
     const handleUpdateResume = async (updatedResume: ResumeContent) => {
         try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                alert("❌ Authentication required. Please log in.");
-                return;
-            }
-
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/resume`, {
                 method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`, // JWT authentication
-                },
-                credentials: "include", // Required for session-based authentication
+                headers: { "Content-Type": "application/json" },
+                credentials: "include", // Ensures JWT authentication via cookies
                 body: JSON.stringify({ id: selectedResume?.id, content: JSON.stringify(updatedResume) }),
             });
 
             const data = await response.json();
             if (!response.ok) {
-                console.error("❌ API Error:", data);
                 throw new Error(data.message || "Failed to update resume.");
             }
 
@@ -131,29 +109,19 @@ export default function ResumeEditor() {
         }
     };
 
-
     const handleEnhance = async () => {
         if (!rawCV.trim()) return;
 
         try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                alert("❌ Authentication required. Please log in.");
-                return;
-            }
-
             console.log("📡 Sending AI resume request...");
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/resume`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`, // Ensures authentication
-                },
-                credentials: "include", // Required for session-based authentication
+                headers: { "Content-Type": "application/json" },
+                credentials: "include", // Ensures cookies are sent
                 body: JSON.stringify({
                     type: "ai_generate",
-                    userId: selectedResume?.userId,  // Ensure userId is included
+                    userId: selectedResume?.userId,
                     rawCV,
                 }),
             });
@@ -162,13 +130,12 @@ export default function ResumeEditor() {
 
             const data = await response.json();
             if (!response.ok) {
-                console.error("❌ API Error:", data);
                 throw new Error(data.error || "AI resume generation failed.");
             }
 
             console.log("✅ AI Response Data:", data);
 
-            // ✅ Successfully generated AI resume
+            // Successfully generated AI resume
             setResumes([data.resume, ...resumes]); // Add new resume to state
             setSelectedResume(data.resume);
             setEditableResume(JSON.parse(data.resume.content));
@@ -180,8 +147,6 @@ export default function ResumeEditor() {
             alert("❌ Could not generate AI resume. Please try again.");
         }
     };
-
-
 
     return (
         <div className="bg-white shadow-md rounded-lg p-6 mt-6 max-w-3xl mx-auto">
@@ -196,7 +161,7 @@ export default function ResumeEditor() {
                         className="w-full p-4 border rounded-md h-48"
                     />
                     <button
-                        onClick={() => handleEnhance()}
+                        onClick={handleEnhance}
                         disabled={!rawCV.trim()}
                         className="mt-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-opacity"
                     >

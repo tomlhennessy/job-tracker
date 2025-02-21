@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/router";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 export default function Navbar() {
-  const { data: session } = useSession(); // Check if user is logged in
-  const router = useRouter()
+  const { data: session, status } = useSession(); // Check login state
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
@@ -18,13 +16,22 @@ export default function Navbar() {
             Features
           </Link>
 
-          {session ? (
+          {status === "loading" ? (
+            <span className="text-gray-500">Loading...</span>
+          ) : session ? (
             <>
               <Link href="/dashboard" className="text-gray-600 hover:text-blue-500">
                 Dashboard
               </Link>
               <button
-                onClick={() => signOut({ callbackUrl: "/" })}
+                onClick={async () => {
+                  try {
+                    await signOut({ callbackUrl: "/" });
+                  } catch (error) {
+                    console.error("❌ Logout failed:", error);
+                    alert("❌ Logout failed. Please try again.");
+                  }
+                }}
                 className="px-4 py-2 bg-red-500 text-white rounded-md shadow hover:bg-red-600 transition"
               >
                 Logout
@@ -32,7 +39,7 @@ export default function Navbar() {
             </>
           ) : (
             <button
-              onClick={() => router.push("/login")}
+              onClick={() => signIn()} // Use signIn() instead of router.push("/login")
               className="px-4 py-2 bg-blue-500 text-white rounded-md shadow hover:bg-blue-600 transition"
             >
               Login

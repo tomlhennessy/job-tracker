@@ -22,46 +22,80 @@ export default function JobDetail() {
     const [jobDescription, setJobDescription] = useState("");
     const [coverLetter, setCoverLetter] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!id) return;
 
-        fetch(`/api/jobs/${id}`)
+        fetch(`/api/jobs/${id}`, {
+            method: "GET",
+            credentials: "include", // Send cookies with request
+        })
             .then((res) => res.json())
             .then((data) => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
                 setJob(data);
                 setJobDescription(data.jobDescription || "");
                 setCoverLetter(data.coverLetter || "No cover letter yet.");
             })
-            .catch((error) => console.error("Error fetching job:", error));
+            .catch((error) => {
+                console.error("❌ Error fetching job:", error);
+                setError("Failed to load job details.");
+            });
     }, [id]);
 
     const handleSaveDescription = async () => {
-        await fetch(`/api/jobs/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ jobDescription }),
-        });
-        alert("Job description saved!");
+        try {
+            const res = await fetch(`/api/jobs/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include", // Send cookies with request
+                body: JSON.stringify({ jobDescription }),
+            });
+
+            if (!res.ok) {
+                throw new Error("Failed to save job description.");
+            }
+
+            alert("✅ Job description saved!");
+        } catch (error) {
+            console.error("❌ Error saving job description:", error);
+            alert("❌ Error saving job description. Please try again.");
+        }
     };
 
     const handleGenerateCoverLetter = async () => {
         setLoading(true);
-        const response = await fetch(`/api/ai/generate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ jobId: id, cv: "Your CV Here", jobDescription }),
-        });
+        try {
+            const response = await fetch(`/api/ai/generate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include", // Send cookies with request
+                body: JSON.stringify({ jobId: id, cv: "Your CV Here", jobDescription }),
+            });
 
-        const data = await response.json();
-        setCoverLetter(data.result);
-        setLoading(false);
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to generate cover letter.");
+            }
+
+            setCoverLetter(data.result);
+        } catch (error) {
+            console.error("❌ Error generating cover letter:", error);
+            alert("❌ Error generating cover letter. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
         <Layout>
             <div className="max-w-3xl mx-auto bg-white shadow-md p-6 rounded-lg">
-                {job ? (
+                {error ? (
+                    <p className="text-center text-red-500">{error}</p>
+                ) : job ? (
                     <>
                         <h1 className="text-3xl font-bold text-gray-900">
                             {job.company} - {job.position}
