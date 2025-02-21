@@ -4,12 +4,32 @@ import GitHubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+declare module "next-auth/jwt" {
+    interface JWT {
+        id: string;
+        email: string;
+        accessToken?: string | null; // ✅ Allow null explicitly
+    }
+}
+
+declare module "next-auth" {
+    interface Session {
+        accessToken?: string | null; // ✅ Allow null explicitly
+        user: {
+            id: string;
+            email: string;
+        };
+    }
+}
+
 
 const prisma = new PrismaClient({
     datasources: {
-      db: {
-        url: process.env.DATABASE_URL,  // ✅ Ensures Prisma reads the correct DB URL
-      },
+        db: {
+            url: process.env.DATABASE_URL,  // ✅ Ensures Prisma reads the correct DB URL
+        },
     },
 });
 
@@ -18,10 +38,6 @@ export const authOptions: NextAuthOptions = {
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID!,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-            authorization: {
-                url: "https://accounts.google.com/o/oauth2/auth",
-                params: { prompt: "consent", access_type: "offline", response_type: "code" },
-            },
         }),
         GitHubProvider({
             clientId: process.env.GITHUB_CLIENT_ID!,
@@ -34,33 +50,31 @@ export const authOptions: NextAuthOptions = {
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
-                try {
-                    if (!credentials?.email || !credentials?.password) {
-                        throw new Error("Email and password are required");
-                    }
-
-                    const user = await prisma.user.findUnique({
-                        where: { email: credentials.email },
-                    });
-
-                    if (!user || !user.hashedPassword) {
-                        throw new Error("Invalid credentials");
-                    }
-
-                    const isValid = await bcrypt.compare(credentials.password, user.hashedPassword);
-                    if (!isValid) {
-                        throw new Error("Invalid credentials");
-                    }
-
-                    return user;
-                } catch (error: unknown) {
-                    if (error instanceof Error) {
-                        console.error("❌ Authentication Error:", error.message);
-                        throw new Error(error.message);
-                    }
-                    console.error("❌ Authentication Error: Unknown error occurred");
-                    throw new Error("Internal Server Error");
+                if (!credentials?.email || !credentials?.password) {
+                    throw new Error("Email and password are required");
                 }
+
+                const user = await prisma.user.findUnique({
+                    where: { email: credentials.email },
+                });
+
+                if (!user || !user.hashedPassword) {
+                    throw new Error("Invalid credentials");
+                }
+
+                const isValid = await bcrypt.compare(credentials.password, user.hashedPassword);
+                if (!isValid) {
+                    throw new Error("Invalid credentials");
+                }
+
+                // ✅ Generate JWT Token
+                const token = jwt.sign(
+                    { id: user.id, email: user.email },
+                    process.env.NEXTAUTH_SECRET!,
+                    { expiresIn: "7d" }
+                );
+
+                return { ...user, accessToken: token }; // ✅ Return JWT instead of setting cookie
             },
         }),
     ],
@@ -68,31 +82,23 @@ export const authOptions: NextAuthOptions = {
         strategy: "jwt",
     },
     callbacks: {
-        async jwt({ token, user, account }) {
-            if (user) {
-                token.id = user.id;
-                token.email = user.email;
-                token.isNewUser = account?.provider !== "credentials";
+        async jwt({ token, user }) {
+            if (user && "accessToken" in user) {
+                token.accessToken = typeof user.accessToken === "string" ? user.accessToken : "";
             }
             return token;
         },
+
         async session({ session, token }) {
-            if (session?.user) {
-                session.user.id = token.id as string;
-                session.user.email = token.email as string;
-            }
+            session.user.id = token.id;
+            session.user.email = token.email;
+            session.accessToken = typeof token.accessToken === "string" ? token.accessToken : "";
             return session;
-        },
-        async redirect({ url, baseUrl }) {
-            console.log("Redirecting to:", url);
-            if (url.includes("/api/auth/error")) {
-                return baseUrl + "/login"; // Redirect failed logins to the login page
-            }
-            return url.startsWith(baseUrl) ? url : baseUrl + "/dashboard";
-        },
+        }
     },
+
     secret: process.env.NEXTAUTH_SECRET,
-    debug: true, // Enable debugging in logs
+    debug: true,
 };
 
 export default NextAuth(authOptions);

@@ -1,25 +1,33 @@
 import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]";
+import { verify } from "jsonwebtoken";
 import OpenAI from "openai";
 import redis from "@/lib/redis"; // Import Redis
 import { allowCors } from "@/lib/cors";
+import { getTokenFromRequest } from "@/lib/auth"; // Import helper for extracting JWT
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const session = await getServerSession(req, res, authOptions);
-
-    if (!session?.user?.id) {
-        return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    const userId = session.user.id;
-    const cacheKey = `resume:${userId}`;
-
     try {
+        // Extract JWT token from request (either cookie or Authorization header)
+        const token = getTokenFromRequest(req);
+        if (!token) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        // Verify JWT and extract user ID
+        const decoded = verify(token, process.env.NEXTAUTH_SECRET!) as { id: string; email: string };
+        const userId = decoded.id;
+
+        // Ensure user is authenticated
+        if (!userId) {
+            return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        const cacheKey = `resume:${userId}`;
+
         if (req.method === "GET") {
             try {
                 // Check Redis Cache First
@@ -140,7 +148,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                     },
                 });
 
-                // Update Redis Cache
+                // ✅ Update Redis Cache
                 await redis.setex(cacheKey, 3600, JSON.stringify(aiResume));
 
                 return res.status(200).json({ resume: aiResume });
@@ -157,4 +165,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 }
 
-export default allowCors(handler)
+export default allowCors(handler);

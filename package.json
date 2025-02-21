@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-  "dev": "next dev", 
-  "docker:backend": "PORT=8080 next dev -p 8080 -H 0.0.0.0",
-  "docker:frontend": "PORT=3000 next dev -p 3000 -H 0.0.0.0",
-  "build": "next build",
-  "start": "next start -p 8080 -H 0.0.0.0",
-  "lint": "next lint",
-  "postinstall": "prisma generate"
+    "dev": "next dev",
+    "docker:backend": "PORT=8080 next dev -p 8080 -H 0.0.0.0",
+    "docker:frontend": "PORT=3000 next dev -p 3000 -H 0.0.0.0",
+    "build": "next build",
+    "start": "next start -p 8080 -H 0.0.0.0",
+    "lint": "next lint",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "schema": "prisma/schema.prisma"
@@ -25,6 +25,7 @@
     "@types/next-auth": "^3.13.0",
     "argon2": "^0.41.1",
     "bcrypt": "^5.1.1",
+    "cookie": "^1.0.2",
     "html2pdf.js": "^0.10.2",
     "ioredis": "^4.28.5",
     "jsonwebtoken": "^9.0.2",
@@ -40,6 +41,7 @@
     "@eslint/eslintrc": "^3",
     "@types/bcrypt": "^5.0.2",
     "@types/bcryptjs": "^2.4.6",
+    "@types/cookie": "^0.6.0",
     "@types/ioredis": "^4.28.10",
     "@types/jsonwebtoken": "^9.0.8",
     "@types/node": "^20",
