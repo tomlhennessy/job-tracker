@@ -6,11 +6,22 @@ import ApplicationsTable from "../components/ApplicationsTable";
 import Layout from "../components/Layout";
 import ResumeEditor from "@/components/ResumeEditor";
 
+interface JobApplication {
+    id: string;
+    company: string;
+    position: string;
+    status: string;
+    coverLetter?: string;
+    jobDescription?: string;
+    followUpDate?: string | null;
+    createdAt: string;
+}
+
 export default function Dashboard() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
-    const [applications, setApplications] = useState([]);
+    const [applications, setApplications] = useState<JobApplication[]>([]);
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -24,10 +35,34 @@ export default function Dashboard() {
     }, [status, router]);
 
     const fetchApplications = async () => {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jobs`);
-        const data = await res.json();
-        setApplications(data);
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                alert("❌ Authentication required. Please log in.");
+                return;
+            }
+
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jobs`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`, // ✅ Ensures JWT authentication
+                },
+                credentials: "include", // ✅ Required for session-based authentication
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                console.error("❌ API Error:", data);
+                throw new Error(data.message || "Failed to fetch job applications.");
+            }
+
+            setApplications(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("❌ Failed to fetch applications:", error);
+            alert("❌ Could not load job applications. Please try again.");
+        }
     };
+
 
     if (loading) return <p>Loading...</p>;
 

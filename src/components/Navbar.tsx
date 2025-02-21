@@ -23,12 +23,6 @@ export default function Navbar() {
               <Link href="/dashboard" className="text-gray-600 hover:text-blue-500">
                 Dashboard
               </Link>
-              <Link href="/dashboard#jobs" className="text-gray-600 hover:text-blue-500">
-                Job Applications
-              </Link>
-              <Link href="/dashboard#resume" className="text-gray-600 hover:text-blue-500">
-                AI Resume & Cover Letters
-              </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="px-4 py-2 bg-red-500 text-white rounded-md shadow hover:bg-red-600 transition"

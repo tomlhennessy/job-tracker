@@ -9,25 +9,34 @@ export default function AddJobForm({ refreshApplications }: { refreshApplication
         e.preventDefault();
 
         try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                alert("❌ Authentication required. Please log in.");
+                return;
+            }
+
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jobs`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token") || ""}`, // ✅ Include JWT if using token-based auth
+                    "Authorization": `Bearer ${token}`, // Ensures JWT is always present
                 },
-                credentials: "include", // ✅ Required if using NextAuth.js or session-based auth
+                credentials: "include", // Required for session-based authentication (if using NextAuth.js)
                 body: JSON.stringify({ company, position, status }),
             });
 
             if (!res.ok) {
                 const errorData = await res.json();
-                throw new Error(errorData.error || "Failed to add job.");
+                console.error("❌ API Error:", errorData);
+                throw new Error(errorData.message || "Failed to add job.");
             }
 
+            // Refresh job applications and reset form
             refreshApplications();
             setCompany("");
             setPosition("");
             setStatus("applied");
+
         } catch (error: unknown) {
             if (error instanceof Error) {
                 alert(`❌ ${error.message}`);
@@ -36,6 +45,7 @@ export default function AddJobForm({ refreshApplications }: { refreshApplication
             }
         }
     };
+
 
 
     return (

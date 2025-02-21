@@ -19,24 +19,42 @@ export default function ApplicationsTable({
             "⚠️ Are you sure you want to delete this job? This will permanently remove all saved details, including cover letters."
         );
 
-        if (confirmDelete) {
-            try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jobs?id=${id}`, {
-                    method: "DELETE",
-                });
+        if (!confirmDelete) return;
 
-                if (response.ok) {
-                    alert("Job deleted successfully.");
-                    refreshApplications();
-                } else {
-                    alert("Failed to delete the job. Please try again.");
-                }
-            } catch (error) {
-                console.error("Error deleting job:", error);
-                alert("An error occurred while deleting the job.");
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                alert("❌ Authentication required. Please log in.");
+                return;
+            }
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jobs?id=${id}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`, // Ensures JWT authentication
+                },
+                credentials: "include", // Required for session-based auth (NextAuth.js)
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                console.error("❌ API Error:", data);
+                throw new Error(data.message || "Failed to delete the job.");
+            }
+
+            alert("✅ Job deleted successfully.");
+            refreshApplications();
+
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                alert(`❌ ${error.message}`);
+            } else {
+                alert("❌ An unknown error occurred.");
             }
         }
     };
+
 
     return (
         <div className="overflow-x-auto">
