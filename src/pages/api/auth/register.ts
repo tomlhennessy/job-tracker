@@ -1,8 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { NextApiRequest, NextApiResponse } from "next";
-import jwt from "jsonwebtoken";
-import { serialize } from "cookie";
 
 const prisma = new PrismaClient();
 
@@ -38,20 +36,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 hashedPassword,
             },
         });
-
-        const token = jwt.sign(
-            { id: user.id, email: user.email },
-            process.env.NEXTAUTH_SECRET!,
-            { expiresIn: "7d" }
-        );
-
-        // ✅ Set JWT in an HTTP-only cookie
-        res.setHeader("Set-Cookie", serialize("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            path: "/",
-        }));
 
         return res.status(201).json({
             message: "User registered successfully",

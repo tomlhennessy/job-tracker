@@ -1,31 +1,25 @@
 import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
-import { verify } from "jsonwebtoken";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import OpenAI from "openai";
 import redis from "@/lib/redis"; // Import Redis
 import { allowCors } from "@/lib/cors";
-import { getTokenFromRequest } from "@/lib/auth"; // Import helper for extracting JWT
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
-        // Extract JWT token from request (either cookie or Authorization header)
-        const token = getTokenFromRequest(req);
-        if (!token) {
+        // ✅ Use NextAuth session instead of manual JWT verification
+        const session = await getServerSession(req, res, authOptions);
+
+        if (!session || !session.user || !session.user.id) {
+            console.log("❌ No valid session found");
             return res.status(401).json({ message: "Unauthorized" });
         }
 
-        // Verify JWT and extract user ID
-        const decoded = verify(token, process.env.NEXTAUTH_SECRET!) as { id: string; email: string };
-        const userId = decoded.id;
-
-        // Ensure user is authenticated
-        if (!userId) {
-            return res.status(401).json({ message: "Not authenticated" });
-        }
-
+        const userId = session.user.id; // ✅ Get authenticated user ID
         const cacheKey = `resume:${userId}`;
 
         if (req.method === "GET") {
@@ -33,12 +27,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                 // Check Redis Cache First
                 const cachedResume = await redis.get(cacheKey);
                 if (cachedResume) {
-                    console.log("Returning cached resume");
+                    console.log("✅ Returning cached resume from Redis");
                     return res.status(200).json(JSON.parse(cachedResume));
                 }
 
                 // If no cache, fetch from PostgreSQL
-                console.log("Fetching resume from database");
+                console.log("📡 Fetching resume from database");
                 const resume = await prisma.resume.findFirst({
                     where: { userId, isLatest: true },
                     orderBy: { version: "desc" },
@@ -53,7 +47,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
                 return res.status(200).json(resume);
             } catch (error) {
-                console.error("Error fetching resume:", error);
+                console.error("❌ Error fetching resume:", error);
                 return res.status(500).json({ error: "Failed to retrieve resume" });
             }
         }
@@ -125,7 +119,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                 try {
                     structuredData = JSON.parse(completion.choices[0].message.content || "{}");
                 } catch (error) {
-                    console.error("Error parsing AI response:", error);
+                    console.error("❌ Error parsing AI response:", error);
                     return res.status(500).json({ error: "Invalid AI-generated response" });
                 }
 
@@ -153,15 +147,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
                 return res.status(200).json({ resume: aiResume });
             } catch (error) {
-                console.error("Error generating AI resume:", error);
+                console.error("❌ Error generating AI resume:", error);
                 return res.status(500).json({ error: "Failed to generate resume" });
             }
         }
 
         return res.status(405).json({ message: "Method not allowed." });
     } catch (error) {
-        console.error("API Error:", error);
-        return res.status(500).json({ error: error instanceof Error ? error.message : "Unexpected error" });
+        console.error("❌ Internal Server Error:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
     }
 }
 

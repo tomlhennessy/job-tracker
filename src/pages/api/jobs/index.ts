@@ -1,30 +1,23 @@
 import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
-import { verify } from "jsonwebtoken";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import redis from "@/lib/redis";
 import { allowCors } from "@/lib/cors";
-import { getTokenFromRequest } from "@/lib/auth"; // Import helper for extracting JWT
 
 const prisma = new PrismaClient();
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
-        // Extract JWT token from request (either cookie or Authorization header)
-        const token = getTokenFromRequest(req);
-        if (!token) {
+        // ✅ Use NextAuth's session handler instead of manually verifying JWTs
+        const session = await getServerSession(req, res, authOptions);
+
+        if (!session || !session.user || !session.user.id) {
+            console.log("❌ No valid session found");
             return res.status(401).json({ message: "Unauthorized" });
         }
 
-        // Verify JWT and extract user ID
-        const decoded = verify(token, process.env.NEXTAUTH_SECRET!) as { id: string; email: string };
-        const userId = decoded.id;
-
-        // Ensure user is authenticated
-        if (!userId) {
-            return res.status(401).json({ message: "Not authenticated" });
-        }
-
-        // Cache key for storing jobs in Redis
+        const userId = session.user.id; // ✅ Get user ID from NextAuth session
         const cacheKey = `jobs:${userId}`;
 
         if (req.method === "GET") {
@@ -32,12 +25,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                 // Check Redis Cache
                 const cachedJobs = await redis.get(cacheKey);
                 if (cachedJobs) {
-                    console.log("Returning cached jobs");
+                    console.log("✅ Returning cached jobs from Redis");
                     return res.status(200).json(JSON.parse(cachedJobs));
                 }
 
-                // If no cache, fetch jobs from PostgreSQL
-                console.log("Fetching jobs from database");
+                console.log("📡 Fetching jobs from database");
                 const jobs = await prisma.job.findMany({
                     where: { userId },
                     orderBy: { createdAt: "desc" },
@@ -48,7 +40,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
                 return res.status(200).json(jobs);
             } catch (error) {
-                console.error("Error fetching jobs:", error);
+                console.error("❌ Error fetching jobs:", error);
                 return res.status(500).json({ error: "Failed to fetch jobs" });
             }
         }
@@ -72,12 +64,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                     },
                 });
 
-                // Invalidate Redis cache (force refresh)
+                // Invalidate Redis cache
                 await redis.del(cacheKey);
 
                 return res.status(201).json(job);
             } catch (error) {
-                console.log("Error adding job:", error);
+                console.log("❌ Error adding job:", error);
                 return res.status(500).json({ error: "Failed to add job" });
             }
         }
@@ -94,12 +86,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                     },
                 });
 
-                // Invalidate Redis cache (force refresh)
+                // Invalidate Redis cache
                 await redis.del(cacheKey);
 
                 return res.status(200).json(updatedJob);
             } catch (error) {
-                console.error("Error updating job:", error);
+                console.error("❌ Error updating job:", error);
                 return res.status(500).json({ error: "Failed to update job" });
             }
         }
@@ -113,18 +105,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                 }
 
                 const job = await prisma.job.delete({
-                    where: {
-                        id,
-                        userId,
-                    },
+                    where: { id, userId },
                 });
 
-                // Invalidate Redis cache (force refresh)
+                // Invalidate Redis cache
                 await redis.del(cacheKey);
 
                 return res.status(200).json({ message: "Job deleted", job });
             } catch (error) {
-                console.log("Error: ", error);
+                console.log("❌ Error deleting job:", error);
                 return res.status(500).json({ error: "Failed to delete job" });
             }
         }
@@ -132,7 +121,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         return res.status(405).json({ message: "Method not allowed" });
 
     } catch (error) {
-        console.error("❌ Authentication Error:", error);
+        console.error("❌ Internal Server Error:", error);
         return res.status(500).json({ message: "Internal Server Error" });
     }
 }

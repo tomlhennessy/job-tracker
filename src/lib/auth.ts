@@ -1,14 +1,14 @@
 import { NextApiRequest } from "next";
 
 export const getTokenFromRequest = (req: NextApiRequest) => {
-    const authHeader = req.headers.authorization;
-    const tokenFromCookie = req.cookies?.token;
+    const tokenFromCookie = req.cookies?.["next-auth.session-token"]; // ✅ Ensures cookies are accessible
 
-    if (authHeader?.startsWith("Bearer ")) {
-        return authHeader.split(" ")[1]; // Extract token from Authorization header
-    } else if (tokenFromCookie) {
-        return tokenFromCookie; // Extract token from cookie
+    console.log("🔍 Extracted Token from Cookies:", tokenFromCookie);
+
+    if (tokenFromCookie) {
+        return tokenFromCookie; // ✅ Extract token from cookie
     }
 
-    return null; // No token found
+    console.log("❌ No Token Found in Cookies");
+    return null; // ❌ No token found
 };

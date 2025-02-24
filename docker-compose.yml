@@ -1,16 +1,18 @@
+
+
 services:
   backend:
     build:
       context: .
       dockerfile: Dockerfile.dev
     ports:
-      - "8080:8080"
-      - "5555:5555" # prisma studio
+      - "8080:8080" # ✅ Exposes backend for access via localhost:8080
+      - "5555:5555" # ✅ Exposes Prisma Studio
     environment:
       - DATABASE_URL=postgresql://postgres:password@db:5432/my_local_db
       - REDIS_HOST=redis
       - NEXTAUTH_URL=http://localhost:3000
-      - NEXT_PUBLIC_API_URL=http://backend:8080  # 👈 Fix: Use "backend" inside Docker!
+      - NEXT_PUBLIC_API_URL=http://localhost:8080  # ✅ Fix: Use localhost for browser access
       - PORT=8080
     depends_on:
       - redis
@@ -26,9 +28,9 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     ports:
-      - "3000:3000"
+      - "3000:3000" # ✅ Exposes frontend for browser access
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8080  # 👈 Frontend must call backend via service name!
+      - NEXT_PUBLIC_API_URL=http://localhost:8080  # ✅ Fix: Use localhost for browser
       - NEXTAUTH_URL=http://localhost:3000
     depends_on:
       - backend

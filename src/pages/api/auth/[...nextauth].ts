@@ -4,26 +4,15 @@ import GitHubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-
-declare module "next-auth/jwt" {
-    interface JWT {
-        id: string;
-        email: string;
-        accessToken?: string | null; // ✅ Allow null explicitly
-    }
-}
 
 declare module "next-auth" {
     interface Session {
-        accessToken?: string | null; // ✅ Allow null explicitly
         user: {
             id: string;
             email: string;
         };
     }
 }
-
 
 const prisma = new PrismaClient({
     datasources: {
@@ -67,14 +56,7 @@ export const authOptions: NextAuthOptions = {
                     throw new Error("Invalid credentials");
                 }
 
-                // ✅ Generate JWT Token
-                const token = jwt.sign(
-                    { id: user.id, email: user.email },
-                    process.env.NEXTAUTH_SECRET!,
-                    { expiresIn: "7d" }
-                );
-
-                return { ...user, accessToken: token }; // ✅ Return JWT instead of setting cookie
+                return { id: user.id, email: user.email }; // ✅ Return user without manually creating a JWT
             },
         }),
     ],
@@ -83,16 +65,16 @@ export const authOptions: NextAuthOptions = {
     },
     callbacks: {
         async jwt({ token, user }) {
-            if (user && "accessToken" in user) {
-                token.accessToken = typeof user.accessToken === "string" ? user.accessToken : "";
+            if (user) {
+                token.id = user.id;
+                token.email = user.email;
             }
             return token;
         },
 
         async session({ session, token }) {
-            session.user.id = token.id;
-            session.user.email = token.email;
-            session.accessToken = typeof token.accessToken === "string" ? token.accessToken : "";
+            session.user.id = token.id as string;
+            session.user.email = token.email as string;
             return session;
         }
     },

@@ -1,28 +1,22 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { PrismaClient } from "@prisma/client";
-import { verify } from "jsonwebtoken";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { allowCors } from "@/lib/cors";
-import { getTokenFromRequest } from "@/lib/auth"; // Import helper for extracting JWT
 
 const prisma = new PrismaClient();
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
-        // Extract JWT token from request (either cookie or Authorization header)
-        const token = getTokenFromRequest(req);
-        if (!token) {
+        // ✅ Use NextAuth session instead of manual JWT verification
+        const session = await getServerSession(req, res, authOptions);
+
+        if (!session || !session.user || !session.user.id) {
+            console.log("❌ No valid session found");
             return res.status(401).json({ message: "Unauthorized" });
         }
 
-        // Verify JWT and extract user ID
-        const decoded = verify(token, process.env.NEXTAUTH_SECRET!) as { id: string; email: string };
-        const userId = decoded.id;
-
-        // Ensure user is authenticated
-        if (!userId) {
-            return res.status(401).json({ message: "Not authenticated" });
-        }
-
+        const userId = session.user.id; // ✅ Get authenticated user ID
         const { id } = req.query;
 
         if (typeof id !== "string") {
@@ -64,11 +58,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
             return res.status(405).json({ error: "Method Not Allowed" });
         } catch (error) {
-            console.error("Error handling job:", error);
+            console.error("❌ Error handling job:", error);
             return res.status(500).json({ error: "Server error" });
         }
     } catch (error) {
-        console.error("❌ Authentication Error:", error);
+        console.error("❌ Internal Server Error:", error);
         return res.status(500).json({ message: "Internal Server Error" });
     }
 }

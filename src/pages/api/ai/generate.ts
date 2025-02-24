@@ -1,9 +1,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import OpenAI from "openai";
 import { PrismaClient } from "@prisma/client";
-import { verify } from "jsonwebtoken";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { allowCors } from "@/lib/cors";
-import { getTokenFromRequest } from "@/lib/auth"; // Import helper for extracting JWT
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({
@@ -12,21 +12,15 @@ const openai = new OpenAI({
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Extract JWT token from request (either cookie or Authorization header)
-    const token = getTokenFromRequest(req);
-    if (!token) {
+    // ✅ Use NextAuth session instead of manual JWT verification
+    const session = await getServerSession(req, res, authOptions);
+
+    if (!session || !session.user || !session.user.id) {
+      console.log("❌ No valid session found");
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    // Verify JWT and extract user ID
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET!) as { id: string; email: string };
-    const userId = decoded.id;
-
-    // Ensure user is authenticated
-    if (!userId) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-
+    const userId = session.user.id; // ✅ Get authenticated user ID
     const { jobId, cv, jobDescription } = req.body;
 
     if (!jobId || !cv || !jobDescription) {
@@ -76,7 +70,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(200).json({ result, updatedJob });
 
   } catch (error) {
-    console.error("OpenAI API Error:", error);
+    console.error("❌ OpenAI API Error:", error);
     return res.status(500).json({ error: "Failed to generate cover letter" });
   }
 }
