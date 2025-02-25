@@ -13,6 +13,9 @@ COPY prisma ./prisma
 # Install only production dependencies (omit dev dependencies)
 RUN npm install --omit=dev
 
+# Explicitly install Webpack (otherwise, it’s missing during the build)
+RUN npm install --save-dev webpack
+
 # Copy the rest of the app
 COPY . .
 

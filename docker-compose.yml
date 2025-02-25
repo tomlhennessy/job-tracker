@@ -2,6 +2,7 @@
 
 services:
   backend:
+    image: tomlhennessy/appli.sh:latest
     build:
       context: .
       dockerfile: Dockerfile.dev
